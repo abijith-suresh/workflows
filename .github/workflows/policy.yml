@@ -1,0 +1,44 @@
+name: Repository policy
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-workflows:
+    name: Validate workflow YAML
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.25.12'
+          cache: false
+
+      - name: Install actionlint
+        env:
+          GOBIN: ${{ runner.temp }}/actionlint
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 # actionlint v1.7.12
+
+      - name: Lint workflows
+        env:
+          ACTIONLINT_BIN: ${{ runner.temp }}/actionlint/actionlint
+        run: '"$ACTIONLINT_BIN"'
+
+  validate-pr-title:
+    name: Validate pull request title
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/pr-title.yml
+    permissions:
+      pull-requests: read
