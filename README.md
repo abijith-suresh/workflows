@@ -1,17 +1,31 @@
 # workflows
 
-Reusable GitHub Actions workflows for [abijith-suresh](https://github.com/abijith-suresh)'s repositories.
+This repository has two purposes:
 
-This repository is intentionally small: it provides shared workflow infrastructure, not a general-purpose CI platform. The initial supported scope is:
+1. reusable GitHub Actions workflows for [Abijith Suresh](https://github.com/abijith-suresh)'s repositories; and
+2. a small, transparent learning and reference project for designing safe,
+   maintainable workflows.
 
-- quality checks for Bun-based frontend projects; and
-- Conventional Commit-style pull request title validation.
+It is intentionally not a general-purpose CI platform. Application-specific
+build, deploy, release, publishing, and environment policy stay in the
+consuming repository.
 
-Application-specific build, deploy, release, and publishing workflows remain in each application repository for now. They need their own domain knowledge, environments, approvals, and permissions.
+## Workflows
+
+- [`bun-quality.yml`](.github/workflows/bun-quality.yml) installs a caller's
+  Bun dependencies and runs its verification command.
+- [`pr-title.yml`](.github/workflows/pr-title.yml) checks a pull request title
+  against the supported Conventional Commit format.
+- [`policy.yml`](.github/workflows/policy.yml) is repository-local validation:
+  it runs `actionlint` on the workflow YAML and calls `pr-title.yml` for pull
+  requests. It does not provide application CI.
 
 ## Calling a reusable workflow
 
-A caller adds a normal workflow triggered by its own events, then delegates a job to this repository. Pin the reusable workflow to a full commit SHA and keep the version as a comment so upgrades are deliberate:
+A caller owns the event trigger and delegates one job to this repository. Pin
+that job to a full commit SHA; the version comment is a readable upgrade hint,
+not the security boundary. These examples use the `v1.0.0` commit currently
+published by this repository:
 
 ```yaml
 name: Quality
@@ -24,15 +38,13 @@ permissions:
 
 jobs:
   bun-quality:
-    uses: abijith-suresh/workflows/.github/workflows/bun-quality.yml@<40-character-commit-sha> # v1.0.0
+    uses: abijith-suresh/workflows/.github/workflows/bun-quality.yml@1cc4c98be2c52b9731c7ec3023f4ebad2b41d8a6 # v1.0.0
     with:
       working-directory: .
       verify-command: bun run verify
     permissions:
       contents: read
 ```
-
-The PR-title workflow is called in the same way:
 
 ```yaml
 name: Pull request title
@@ -45,60 +57,57 @@ permissions:
 
 jobs:
   pr-title:
-    uses: abijith-suresh/workflows/.github/workflows/pr-title.yml@<40-character-commit-sha> # v1.0.0
+    uses: abijith-suresh/workflows/.github/workflows/pr-title.yml@1cc4c98be2c52b9731c7ec3023f4ebad2b41d8a6 # v1.0.0
     permissions:
       pull-requests: read
 ```
 
-Reusable workflows are jobs, not steps: a job that uses `uses` cannot also define `runs-on` or `steps`. The calling workflow chooses the trigger, while the called workflow supplies the implementation. See GitHub's [reusable workflow documentation](https://docs.github.com/en/actions/sharing-automations/reusing-workflows).
+Reusable workflows are jobs, not steps: a job using `uses` cannot also define
+`runs-on` or `steps`. See GitHub's
+[reusable workflow documentation](https://docs.github.com/en/actions/sharing-automations/reusing-workflows).
 
-## Security and permissions
+### `bun-quality.yml` inputs
 
-- Call these workflows from `pull_request`, rather than `pull_request_target`, when checking pull request code. The Bun workflow checks out and executes code from the caller repository.
-- Grant only the permissions needed by the called workflow. The Bun workflow needs `contents: read`; the title check needs `pull-requests: read`. A called workflow cannot elevate the caller's permissions.
-- Neither workflow accepts, reads, or requires repository secrets. Do not add `secrets: inherit` unless a future workflow has an explicitly reviewed need.
-- The Bun workflow runs dependency installation and the caller's verification command. Treat those commands as untrusted code for fork pull requests: use read-only permissions and do not make secrets available.
-- Third-party actions are pinned to full commit SHAs in this repository. Review action changes before updating those pins.
-
-## Versioning and upgrades
-
-Consumers should use a full 40-character commit SHA, with the corresponding release or version tag in a comment. Tags are convenient labels, not a replacement for SHA pinning. Updates should be reviewed as changes to executable CI infrastructure, then adopted by changing the SHA in each caller. Breaking interface changes should use a new major version; the initial interface is the `v1` line.
-
-The repository's own GitHub Actions dependencies are checked weekly by Dependabot. Minor and patch updates are grouped; major updates stay separate for explicit human review.
-
-## Available workflows
-
-### `bun-quality.yml`
-
-Runs in the caller repository and:
-
-1. checks out the caller repository;
-2. reads `<working-directory>/.bun-version` when that file exists, otherwise installs the latest Bun release;
-3. runs `bun install --frozen-lockfile`; and
-4. runs the configured verification command.
-
-Inputs:
-
-| Input | Required | Default | Description |
+| Input | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `working-directory` | No | `.` | Directory containing the Bun project. |
-| `verify-command` | No | `bun run verify` | Command used to verify the project after installation. |
+| `working-directory` | No | `.` | Bun project directory. |
+| `verify-command` | No | `bun run verify` | Command run after `bun install --frozen-lockfile`. |
 
-### `pr-title.yml`
+The Bun workflow checks out the caller repository, uses its `.bun-version`
+when present (otherwise the latest Bun release), installs dependencies, and
+runs the configured command. It therefore executes caller-controlled code.
 
-Checks the pull request title against this format:
+### Permissions and security
 
-```text
-<type>[optional(scope)][optional !]: <description>
-```
+- Grant only the permissions the called workflow needs: `contents: read` for
+  `bun-quality.yml`, or `pull-requests: read` for `pr-title.yml`.
+- Use `pull_request`, not `pull_request_target`, when a workflow checks pull
+  request code. Keep fork jobs read-only and do not pass secrets to them.
+- Neither reusable workflow requires repository secrets. Do not use
+  `secrets: inherit` unless a separately reviewed workflow genuinely needs it.
+- All third-party actions in this repository are pinned to full commit SHAs.
+  Review pin changes as executable CI changes.
 
-Supported types are `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, and `test`. For example, `feat(ui): add keyboard navigation` and `fix!: remove the legacy API` are valid. The description must be non-empty and separated from the prefix by `: `.
+## What stays local to callers
 
-Dependabot pull requests are exempt based on the pull request author's account (`dependabot[bot]`). This keeps automated dependency and security updates from being blocked by their standard `Bump ...` titles; human-authored pull requests still need a Conventional Commit title.
+Consuming repositories choose their own triggers, application tests and build
+matrices, deployments, environments and approvals, secrets, publishing, and
+release automation. Branch protection is a repository setting, and releases
+are tags/GitHub releases or release workflows; neither is implicitly provided
+by these reusable workflows.
 
-## Development
+## Versioning and learning notes
 
-This repository contains workflow YAML rather than an application. Make focused changes, inspect the rendered YAML, and run a workflow linter such as `actionlint` before opening a pull request when it is available.
+After review, reusable interface changes can be published with a versioned tag
+or GitHub release. Callers should continue to pin the full commit SHA and keep
+the release in a comment. Use a new major version for breaking interface
+changes, and document input, permission, and security changes alongside the
+implementation.
+
+The repository's own GitHub Actions dependencies are checked weekly by
+Dependabot. For contribution and security guidance, see
+[CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
+[AGENTS.md](AGENTS.md).
 
 ## License
 
