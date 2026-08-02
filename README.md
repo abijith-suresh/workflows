@@ -14,6 +14,9 @@ consuming repository.
 
 - [`bun-quality.yml`](.github/workflows/bun-quality.yml) installs a caller's
   Bun dependencies and runs its verification command.
+- [`dependency-review.yml`](.github/workflows/dependency-review.yml) reviews
+  dependency changes in a pull request without installing or running project
+  code.
 - [`pr-title.yml`](.github/workflows/pr-title.yml) checks a pull request title
   against the supported Conventional Commit format.
 - [`policy.yml`](.github/workflows/policy.yml) is repository-local validation:
@@ -62,6 +65,28 @@ jobs:
       pull-requests: read
 ```
 
+```yaml
+name: Dependency review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    uses: abijith-suresh/workflows/.github/workflows/dependency-review.yml@7cb62f357633e6beb43a4691e3eb96862bf206bf # unreleased dependency-review workflow
+    with:
+      fail-on-severity: high
+    permissions:
+      contents: read
+```
+
+`dependency-review.yml` reviews dependency diffs through GitHub's dependency
+graph; it does not install Bun or npm dependencies or run project scripts. Keep
+quality and build workflows separate in the consuming repository.
+
 Reusable workflows are jobs, not steps: a job using `uses` cannot also define
 `runs-on` or `steps`. See GitHub's
 [reusable workflow documentation](https://docs.github.com/en/actions/sharing-automations/reusing-workflows).
@@ -77,13 +102,22 @@ The Bun workflow checks out the caller repository, uses its `.bun-version`
 when present (otherwise the latest Bun release), installs dependencies, and
 runs the configured command. It therefore executes caller-controlled code.
 
+### `dependency-review.yml` inputs
+
+| Input | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `fail-on-severity` | No | `high` | Fails when a dependency diff introduces a vulnerability at or above this severity. |
+
+The supported values are `low`, `moderate`, `high`, and `critical`.
+
 ### Permissions and security
 
 - Grant only the permissions the called workflow needs: `contents: read` for
-  `bun-quality.yml`, or `pull-requests: read` for `pr-title.yml`.
+  `bun-quality.yml` and `dependency-review.yml`, or `pull-requests: read` for
+  `pr-title.yml`. Dependency review does not post pull request comments.
 - Use `pull_request`, not `pull_request_target`, when a workflow checks pull
   request code. Keep fork jobs read-only and do not pass secrets to them.
-- Neither reusable workflow requires repository secrets. Do not use
+- These reusable workflows require no repository secrets. Do not use
   `secrets: inherit` unless a separately reviewed workflow genuinely needs it.
 - All third-party actions in this repository are pinned to full commit SHAs.
   Review pin changes as executable CI changes.
