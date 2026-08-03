@@ -57,22 +57,24 @@ permissions:
 
 jobs:
   npm-quality:
-    uses: abijith-suresh/workflows/.github/workflows/npm-quality.yml@<immutable-pr-commit> # replace with released commit after merge
+    uses: abijith-suresh/workflows/.github/workflows/npm-quality.yml@6136c325cd1618188affefe2be3a343953fa65af # PR commit; replace with released commit after merge
     permissions:
       contents: read
 
   bun-quality:
-    uses: abijith-suresh/workflows/.github/workflows/bun-quality.yml@<immutable-pr-commit> # replace with released commit after merge
+    uses: abijith-suresh/workflows/.github/workflows/bun-quality.yml@6136c325cd1618188affefe2be3a343953fa65af # PR commit; replace with released commit after merge
     permissions:
       contents: read
 ```
 
 Both jobs are zero-input calls: do not add `with`, `verify-command`, or
-`working-directory`. The npm workflow checks out the caller, reads Node from
-its root `.node-version`, reads and validates the root `packageManager` after
-Node setup, installs that exact npm version, caches only the root
-`package-lock.json`, runs `npm ci`, and then runs `npm run verify`. The Bun
-workflow checks out the caller, requires its root `.bun-version`, runs
+`working-directory`. This is a breaking upgrade for callers of the earlier
+input-based interface: remove those inputs and add the required root metadata
+before switching the workflow pin. The npm workflow checks out the caller,
+reads Node from its root `.node-version`, reads and validates the root
+`packageManager` after Node setup, installs that exact npm version, caches only
+ the root `package-lock.json`, runs `npm ci`, and then runs `npm run verify`.
+The Bun workflow checks out the caller, requires its root `.bun-version`, runs
 `bun install --frozen-lockfile`, and then runs `bun run verify`. Neither
 workflow accepts arbitrary shell commands or uses secrets.
 
