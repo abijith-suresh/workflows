@@ -1,0 +1,67 @@
+name: npm monorepo quality
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: Node.js version to install
+        required: true
+        type: string
+      npm-version:
+        description: Exact npm version to install when non-empty
+        required: false
+        type: string
+        default: ''
+      working-directory:
+        description: Directory containing the npm project
+        required: false
+        type: string
+        default: .
+      verify-command:
+        description: Command to run after installing dependencies
+        required: false
+        type: string
+        default: npm run verify
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Install and verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: ${{ github.repository }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Install requested npm version
+        if: inputs.npm-version != ''
+        shell: bash
+        env:
+          NPM_VERSION: ${{ inputs.npm-version }}
+        run: |
+          set -euo pipefail
+          npm install --global "npm@${NPM_VERSION}"
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: npm ci
+
+      - name: Verify project
+        working-directory: ${{ inputs.working-directory }}
+        shell: bash
+        env:
+          VERIFY_COMMAND: ${{ inputs.verify-command }}
+        run: bash -euo pipefail -c "$VERIFY_COMMAND"
