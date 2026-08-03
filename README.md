@@ -69,9 +69,14 @@ jobs:
     permissions:
       contents: read
 
+  bun-quality:
+    uses: abijith-suresh/workflows/.github/workflows/bun-quality.yml@eb46f93aba5dd01d2d951d10b2c31f1b2c73b106 # PR commit; replace with released commit after merge
+    permissions:
+      contents: read
+
 ```
 
-The npm job is a zero-input call: do not add `with`, `verify-command`, or
+Both jobs are zero-input calls: do not add `with`, `verify-command`, or
 `working-directory`. This is a breaking upgrade for npm callers of the earlier
 input-based interface: remove those inputs and add the required root metadata
 before switching the workflow pin. The npm workflow checks out the caller,
