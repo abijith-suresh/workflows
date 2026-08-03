@@ -114,7 +114,7 @@ permissions:
 
 jobs:
   validate-title:
-    uses: abijith-suresh/workflows/.github/workflows/conventional-commit-title.yml@<new-release-commit-sha> # replace with immutable released commit
+    uses: abijith-suresh/workflows/.github/workflows/conventional-commit-title.yml@51c520717d5d95fac6b0c9dc54eb81333097e16c # PR commit; replace with released commit after merge
     permissions:
       pull-requests: read
 ```
