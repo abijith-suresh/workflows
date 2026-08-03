@@ -14,11 +14,14 @@ inspect.
 - The shared quality workflows are intentionally zero-input root contracts:
   npm callers provide root `.node-version`, `package-lock.json`, and
   `package.json` with exact `packageManager: npm@major.minor.patch`; Bun
-  callers provide root `.bun-version` and a Bun lockfile. Both provide a root
-  `verify` script. They run only `npm run verify` or `bun run verify` and must
-  not accept arbitrary shell commands or directory overrides.
+  callers provide an exact root `.bun-version`, root `bun.lock`, and root
+  `package.json` with an exact `packageManager: bun@major.minor.patch` that
+  agrees with `.bun-version`. Both provide a root `verify` script. They run
+  only `npm run verify` or `bun run verify` and must not accept arbitrary shell
+  commands or directory overrides.
 - If a project is exceptional, add a root compatibility wrapper that exposes
-  this contract or keep package-specific quality logic in the consumer. Do not
+  this contract or keep package-specific quality logic in the consumer. Projects
+  such as snapserve remain local until they provide that wrapper. Do not
   reintroduce generic `verify-command` or `working-directory` inputs.
 - Give each workflow and job a clear, unique name. Keep validation focused on
   the behavior the repository actually owns.
@@ -42,9 +45,10 @@ From the repository root, run `git diff --check` and `actionlint` (v1.7.12
 when matching repository policy). Validate changed YAML and JSON, format files
 when a formatter is configured, inspect the rendered YAML, and inspect the
 final diff as well. Keep the repository's policy workflow deterministic and
-free of application-specific CI. The npm quality workflow reads
-`.node-version` from the checked-out caller; this repository does not provide a
-central runtime file that controls callers.
+free of application-specific CI. The quality workflows read runtime files
+from the checked-out caller; this repository does not provide a central
+`.bun-version` or other runtime file that controls callers. This repository is
+not a Bun consumer, so adding `.bun-version` here would not affect callers.
 
 ## Releases and documentation
 

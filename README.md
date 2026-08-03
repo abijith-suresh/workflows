@@ -13,7 +13,7 @@ consuming repository.
 ## Workflows
 
 - [`bun-quality.yml`](.github/workflows/bun-quality.yml) installs a caller's
-  Bun dependencies and runs its verification command.
+  root Bun dependencies and runs `bun run verify`.
 - [`npm-quality.yml`](.github/workflows/npm-quality.yml) installs a caller's
   root npm dependencies and runs `npm run verify`.
 - [`dependency-review.yml`](.github/workflows/dependency-review.yml) reviews
@@ -31,21 +31,28 @@ A caller owns the event trigger and delegates one job to this repository. Pin
 that job to a full commit SHA; the version comment is a readable upgrade hint,
 not the security boundary. The npm quality example below uses the immutable
 commit being reviewed in this PR; after release, replace it with the immutable
-commit for the released version and update its comment. The Bun workflow remains documented at its
-released `v0.1.0` interface in this PR.
+commit for the released version and update its comment. The Bun workflow in this
+PR uses the same pinned, zero-input pattern.
 
-The npm quality workflow has a deliberately strict, zero-input root contract.
-Before calling it, the consumer must put the runtime metadata and lockfile at
-its repository root:
+The quality workflows have deliberately strict, zero-input root contracts.
+Before calling one, the consumer must put the runtime metadata, package
+manifest, lockfile, and verification script at its repository root:
 
 - npm projects must have a root `.node-version`, a root `package-lock.json`,
   and a root `package.json` whose `packageManager` is exactly
   `npm@major.minor.patch` (for example, `npm@10.9.2`).
-- npm projects must define a root `verify` script. The workflow runs only
-  `npm run verify` and accepts no command or directory overrides.
+- Bun projects must have an exact root `.bun-version`, a root `bun.lock`, and a
+  root `package.json` whose exact `packageManager` value agrees with that Bun
+  version (for example, `bun@1.2.3`).
+- Both projects must define a root `verify` script. The workflows run only
+  `npm run verify` or `bun run verify` and accept no command or directory
+  overrides.
 
-The released Bun workflow retains its separate input-based contract and Bun
-project requirements.
+The Bun workflow requires the caller's root `.bun-version`; it never falls
+back to `latest`. Its migration is a breaking change for callers of the old
+input-based interface: remove `working-directory` and `verify-command`, move
+or wrap the project so the required root files exist, and use the zero-input
+job call.
 
 ```yaml
 name: Quality
@@ -71,14 +78,15 @@ before switching the workflow pin. The npm workflow checks out the caller,
 reads Node from its root `.node-version`, reads and validates the root
 `packageManager` after Node setup, installs that exact npm version, caches only
 `package-lock.json` at the root, runs `npm ci`, and then runs `npm run verify`.
-The released Bun workflow retains its configurable inputs and uses the
-corresponding project directory and verification command. Neither workflow
-uses secrets.
+The Bun workflow checks out the caller, reads Bun from its exact root
+`.bun-version`, runs `bun install --frozen-lockfile` and then `bun run verify` at
+the root. Neither workflow uses secrets.
 
-The npm quality workflow reads `.node-version` from the checked-out caller
-repository. The workflows repository does not provide a central runtime file
-that controls callers; maintainers should use their local runtime tooling when
-working on this repository.
+The quality workflows read runtime files from the checked-out caller repository.
+The workflows repository does not provide a central `.bun-version` (or a
+central runtime file that controls callers); this repository is not a Bun
+consumer, and a file here would not affect callers. Maintainers should use
+local runtime tooling when working on this repository.
 
 The implementation follows GitHub's
 [reusable workflow guidance](https://docs.github.com/en/actions/sharing-automations/reusing-workflows),
@@ -130,30 +138,31 @@ Reusable workflows are jobs, not steps: a job using `uses` cannot also define
 
 ### Quality workflow inputs
 
-The npm quality workflow intentionally exposes **no inputs**. Its interface is
-root conventions rather than caller-supplied commands:
+Both quality workflows intentionally expose **no inputs**. Their interfaces
+are root conventions rather than caller-supplied commands:
 
 | Workflow | Required root contract |
 | --- | --- |
 | `npm-quality.yml` | `.node-version`, `package.json` with exact `packageManager: npm@major.minor.patch`, `package-lock.json`, and a `verify` script. |
-| `bun-quality.yml` | See the released `v0.1.0` workflow contract below. |
+| `bun-quality.yml` | Exact `.bun-version`, `package.json` with an agreeing exact `packageManager: bun@major.minor.patch`, `bun.lock`, and a `verify` script. |
 
 The npm workflow parses `packageManager` as metadata, requires the complete
 `npm@major.minor.patch` form with no range, alias, or prerelease, and installs
 that exact npm version before `npm ci`. It operates at the caller's repository
 root and does not evaluate arbitrary shell input.
 
-The released Bun workflow supports optional `working-directory` and
-`verify-command` inputs, uses the caller's `.bun-version` when present (or the
-latest Bun release otherwise), and runs the configured command after
-`bun install --frozen-lockfile`. Bun contract changes are intentionally out of
-scope for this npm-only PR; future Bun consumer changes belong in a separate
-PR.
+The Bun workflow uses the documented `bun-version-file: .bun-version` input,
+has no `latest` fallback, and runs the frozen install and verification script
+at the caller's root. A Bun caller that cannot provide this root contract
+should keep its quality workflow local. In particular, snapserve remains local
+until it provides a root compatibility wrapper with the required Bun metadata,
+lockfile, and `verify` script.
 
 This contract favors the dominant repository layout over a generic monorepo
 adapter. An exceptional project should add a root compatibility wrapper that
 exposes the required `verify` script and root lockfile/runtime metadata, or
-retain its package-specific quality workflow locally. Do not weaken the shared
+retain its package-specific quality workflow locally. Projects such as snapserve
+remain local until they can provide that wrapper. Do not weaken the shared
 workflow with directory or command inputs. Package-specific builds, Changesets,
 matrices, smoke tests, deployment, and release logic remain in the caller.
 

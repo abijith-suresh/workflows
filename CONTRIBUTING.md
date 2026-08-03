@@ -41,13 +41,16 @@ review, so the pull request title should also make a good commit subject.
   validation job convenient, and treat fork pull requests as untrusted.
 - The shared quality workflows are zero-input root contracts. npm callers need
   root `.node-version`, `package-lock.json`, and `package.json` with an exact
-  `packageManager` value matching `npm@major.minor.patch`; Bun callers need
-  root `.bun-version` and a Bun lockfile. Both need a root `verify` script.
-  The workflows run only `npm run verify` or `bun run verify` and must not
-  accept arbitrary shell commands or `working-directory` overrides.
+  `packageManager` value matching `npm@major.minor.patch`; Bun callers need an
+  exact root `.bun-version`, root `bun.lock`, and root `package.json` with an
+  exact `packageManager` value matching that Bun version. Both need a root
+  `verify` script. The workflows run only `npm run verify` or `bun run verify`
+  and must not accept arbitrary shell commands or `working-directory`
+  overrides.
 - If an exceptional project does not fit the root contract, add a root
   compatibility wrapper that exposes the required metadata and `verify` script,
-  or retain package-specific workflow logic in that consumer. Do not add
+  or retain package-specific workflow logic in that consumer. Projects such as
+  snapserve remain local until they provide that wrapper. Do not add
   consumer-specific logic or weaken the shared contract.
 - For a reusable workflow interface, describe the input, default, permission,
   and security implications in the README. A zero-input interface still needs
@@ -64,6 +67,7 @@ review, so the pull request title should also make a good commit subject.
 See [AGENTS.md](AGENTS.md) for the repository conventions,
 [SECURITY.md](SECURITY.md) for reporting workflow security issues, and the
 [workflow README](README.md#calling-a-reusable-workflow) for the complete root
-contract. The npm quality workflow reads the caller's required root
-`.node-version`; this repository does not provide a central runtime file that
-controls callers.
+contract. The quality workflows read the caller's required root runtime files; this
+repository does not provide a central `.bun-version` or other runtime file that
+controls callers. It is not a Bun consumer, so do not add `.bun-version` here:
+a file in this repository would not affect consuming repositories.
