@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/abijith-suresh/workflows/compare/v0.1.0...v0.2.0) (2026-08-03)
+
+
+### Features
+
+* **ci:** add reusable npm quality workflow ([#7](https://github.com/abijith-suresh/workflows/issues/7)) ([731aec9](https://github.com/abijith-suresh/workflows/commit/731aec983c8bd78635d5d69074c47ffc74f46bf0))
+
 ## [0.1.0](https://github.com/abijith-suresh/workflows/compare/v0.0.1...v0.1.0) (2026-08-02)
 
 
