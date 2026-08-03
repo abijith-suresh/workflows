@@ -36,9 +36,9 @@ jobs:
           ACTIONLINT_BIN: ${{ runner.temp }}/actionlint/actionlint
         run: '"$ACTIONLINT_BIN"'
 
-  validate-pr-title:
-    name: Validate pull request title
+  validate-title:
+    name: Validate title
     if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/pr-title.yml
+    uses: ./.github/workflows/conventional-commit-title.yml
     permissions:
       pull-requests: read

@@ -29,8 +29,10 @@ Pull request titles use Conventional Commits. Use one of the supported types
 (`build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`,
 `style`, or `test`), followed by an optional scope and `: ` plus a description;
 for example, `ci: validate workflow YAML` or `docs(readme): clarify callers`.
-Dependabot titles are exempt from this check. Changes are squash-merged after
-review, so the pull request title should also make a good commit subject.
+The complete title must be at most 72 characters, and its subject must not end
+with a period. Dependabot titles are exempt from this check. Changes are
+squash-merged after review, so the pull request title should also make a good
+commit subject.
 
 ## Workflow changes
 
@@ -42,11 +44,11 @@ review, so the pull request title should also make a good commit subject.
 - The shared quality workflows are zero-input root contracts. npm callers need
   root `.node-version`, `package-lock.json`, and `package.json` with an exact
   `packageManager` value matching `npm@major.minor.patch`; Bun callers need an
-  exact root `.bun-version`, root `bun.lock`, and root `package.json` with an
-  exact `packageManager` value matching that Bun version. Both need a root
-  `verify` script. The workflows run only `npm run verify` or `bun run verify`
-  and must not accept arbitrary shell commands or `working-directory`
-  overrides.
+  exact root `.bun-version` in `major.minor.patch` form, root `bun.lock`, and
+  root `package.json` with an exact `packageManager` value matching that Bun
+  version as `bun@major.minor.patch`. Both need a root `verify` script. The workflows run
+  only `npm run verify` or `bun run verify` and must not accept arbitrary shell
+  commands or `working-directory` overrides.
 - If an exceptional project does not fit the root contract, add a root
   compatibility wrapper that exposes the required metadata and `verify` script,
   or retain package-specific workflow logic in that consumer. Projects such as
@@ -62,7 +64,7 @@ review, so the pull request title should also make a good commit subject.
   when consumers must change their caller.
 - If a change affects the repository's own validation, ensure the policy
   workflow still validates all workflow YAML and still exercises the local
-  pull-request-title workflow.
+  `conventional-commit-title.yml` workflow.
 
 See [AGENTS.md](AGENTS.md) for the repository conventions,
 [SECURITY.md](SECURITY.md) for reporting workflow security issues, and the
