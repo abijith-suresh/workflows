@@ -19,11 +19,13 @@ consuming repository.
 - [`dependency-review.yml`](.github/workflows/dependency-review.yml) reviews
   dependency changes in a pull request without installing or running project
   code.
-- [`pr-title.yml`](.github/workflows/pr-title.yml) checks a pull request title
-  against the supported Conventional Commit format.
+- [`conventional-commit-title.yml`](.github/workflows/conventional-commit-title.yml)
+  checks a pull request title against the supported Conventional Commit format,
+  including a 72-character maximum and no period at the end of the subject.
 - [`policy.yml`](.github/workflows/policy.yml) is repository-local validation:
-  it runs `actionlint` on the workflow YAML and calls `pr-title.yml` for pull
-  requests. It does not provide application CI.
+  it runs `actionlint` on the workflow YAML and calls
+  `conventional-commit-title.yml` for pull requests. It does not provide
+  application CI.
 
 ## Calling a reusable workflow
 
@@ -83,9 +85,11 @@ before switching the workflow pin. The npm workflow checks out the caller,
 reads Node from its root `.node-version`, reads and validates the root
 `packageManager` after Node setup, installs that exact npm version, caches only
 `package-lock.json` at the root, runs `npm ci`, and then runs `npm run verify`.
-The Bun workflow checks out the caller, reads Bun from its exact root
-`.bun-version`, runs `bun install --frozen-lockfile` and then `bun run verify` at
-the root. Neither workflow uses secrets.
+The Bun workflow checks out the caller, validates an exact root `.bun-version`,
+reads the root `packageManager` with Bun's JSON parser, and fails before install
+if it is not the matching exact `bun@major.minor.patch` value. It then runs
+`bun install --frozen-lockfile` and `bun run verify` at the root. Neither
+workflow uses secrets.
 
 The quality workflows read runtime files from the checked-out caller repository.
 The workflows repository does not provide a central `.bun-version` (or a
@@ -100,7 +104,7 @@ The implementation follows GitHub's
 and npm's [package.json metadata documentation](https://docs.npmjs.com/cli/v11/configuring-npm/package-json).
 
 ```yaml
-name: Pull request title
+name: Conventional Commit title
 
 on:
   pull_request:
@@ -109,11 +113,17 @@ permissions:
   pull-requests: read
 
 jobs:
-  pr-title:
-    uses: abijith-suresh/workflows/.github/workflows/pr-title.yml@b42be9571985efb1ce10970340250fcccc657050 # v0.1.0
+  validate-title:
+    uses: abijith-suresh/workflows/.github/workflows/conventional-commit-title.yml@51c520717d5d95fac6b0c9dc54eb81333097e16c # PR commit; replace with released commit after merge
     permissions:
       pull-requests: read
 ```
+
+The title workflow accepts only `build`, `chore`, `ci`, `docs`, `feat`, `fix`,
+`perf`, `refactor`, `revert`, `style`, and `test`, with an optional scope and
+breaking-change marker. The complete title must be at most 72 characters, and
+the subject after `: ` must not end with a period. Dependabot pull requests
+remain exempt from this check.
 
 ```yaml
 name: Dependency review
@@ -157,8 +167,10 @@ that exact npm version before `npm ci`. It operates at the caller's repository
 root and does not evaluate arbitrary shell input.
 
 The Bun workflow uses the documented `bun-version-file: .bun-version` input,
-has no `latest` fallback, and runs the frozen install and verification script
-at the caller's root. A Bun caller that cannot provide this root contract
+validates that the root `.bun-version` is an exact `major.minor.patch` and that
+Bun's parsed root `packageManager` is exactly the matching
+`bun@major.minor.patch`, then runs the frozen install and verification script
+at the caller's root. It has no `latest` fallback. A Bun caller that cannot provide this root contract
 should keep its quality workflow local. In particular, snapserve remains local
 until it provides a root compatibility wrapper with the required Bun metadata,
 lockfile, and `verify` script.
@@ -183,8 +195,8 @@ The supported values are `low`, `moderate`, `high`, and `critical`.
 
 - Grant only the permissions the called workflow needs: `contents: read` for
   `bun-quality.yml`, `npm-quality.yml`, and `dependency-review.yml`, or
-  `pull-requests: read` for `pr-title.yml`. Dependency review does not post
-  pull request comments. The quality workflows need no secrets.
+  `pull-requests: read` for `conventional-commit-title.yml`. Dependency review
+  does not post pull request comments. The quality workflows need no secrets.
 - Use `pull_request`, not `pull_request_target`, when a workflow checks pull
   request code. Keep fork jobs read-only and do not pass secrets to them.
 - These reusable workflows require no repository secrets. Do not use

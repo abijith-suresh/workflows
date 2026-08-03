@@ -1,0 +1,44 @@
+name: Conventional Commit title
+
+on:
+  workflow_call:
+
+permissions:
+  pull-requests: read
+
+jobs:
+  title:
+    name: Validate title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check title
+        shell: bash
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ "$PR_AUTHOR" == "dependabot[bot]" ]]; then
+            echo "Dependabot pull request: title check exempted."
+            exit 0
+          fi
+
+          if (( ${#PR_TITLE} > 72 )); then
+            echo "Pull request title must be 72 characters or fewer (found ${#PR_TITLE})." >&2
+            exit 1
+          fi
+
+          pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([^()]+\))?!?: (.+)$'
+          if [[ ! "$PR_TITLE" =~ $pattern ]]; then
+            echo "Pull request title must match <type>[optional(scope)][optional !]: <description>." >&2
+            echo "Supported types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test." >&2
+            exit 1
+          fi
+
+          subject="${BASH_REMATCH[3]}"
+          if [[ "$subject" == *. ]]; then
+            echo "Pull request title subject must not end with a period." >&2
+            exit 1
+          fi
+
+          echo "Pull request title is valid: $PR_TITLE"

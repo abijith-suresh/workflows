@@ -14,15 +14,20 @@ inspect.
 - The shared quality workflows are intentionally zero-input root contracts:
   npm callers provide root `.node-version`, `package-lock.json`, and
   `package.json` with exact `packageManager: npm@major.minor.patch`; Bun
-  callers provide an exact root `.bun-version`, root `bun.lock`, and root
-  `package.json` with an exact `packageManager: bun@major.minor.patch` that
-  agrees with `.bun-version`. Both provide a root `verify` script. They run
-  only `npm run verify` or `bun run verify` and must not accept arbitrary shell
-  commands or directory overrides.
+  callers provide an exact root `.bun-version` in `major.minor.patch` form,
+  root `bun.lock`, and root `package.json` with an exact
+  `packageManager: bun@major.minor.patch` value equal to `.bun-version`. Both
+  provide a root `verify` script. They run only `npm run verify` or
+  `bun run verify` and must not accept arbitrary shell commands or directory
+  overrides.
 - If a project is exceptional, add a root compatibility wrapper that exposes
   this contract or keep package-specific quality logic in the consumer. Projects
   such as snapserve remain local until they provide that wrapper. Do not
   reintroduce generic `verify-command` or `working-directory` inputs.
+- The Conventional Commit title workflow accepts the central type list
+  (`build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`,
+  `style`, `test`), limits the complete title to 72 characters, and rejects a
+  subject ending in a period. Dependabot titles remain exempt.
 - Give each workflow and job a clear, unique name. Keep validation focused on
   the behavior the repository actually owns.
 - Default to least privilege. A called workflow cannot grant permissions that
