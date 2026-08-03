@@ -47,7 +47,7 @@ permissions:
 
 jobs:
   npm-quality:
-    uses: abijith-suresh/workflows/.github/workflows/npm-quality.yml@e67dbd4abc1f1f91c718097f36d549d820f9c261 # PR commit; replace with released commit after merge
+    uses: abijith-suresh/workflows/.github/workflows/npm-quality.yml@56fbb825c21d55c87fa68fe1b9c8971837c18b2a # PR commit; replace with released commit after merge
     with:
       node-version: '22.14.0'
       npm-version: '10.9.2'
