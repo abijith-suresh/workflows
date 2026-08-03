@@ -35,12 +35,25 @@ review, so the pull request title should also make a good commit subject.
 ## Workflow changes
 
 - Pin every third-party action to its full commit SHA and keep the human-readable
-  version as a comment. Review the upstream change before updating a pin.
+  version as a comment. Verify the SHA against the official upstream tag and
+  review the upstream change before updating a pin.
 - Keep permissions at the narrowest useful scope. Do not add secrets to make a
   validation job convenient, and treat fork pull requests as untrusted.
+- The shared quality workflows are zero-input root contracts. npm callers need
+  root `.node-version`, `package-lock.json`, and `package.json` with an exact
+  `packageManager` value matching `npm@major.minor.patch`; Bun callers need
+  root `.bun-version` and a Bun lockfile. Both need a root `verify` script.
+  The workflows run only `npm run verify` or `bun run verify` and must not
+  accept arbitrary shell commands or `working-directory` overrides.
+- If an exceptional project does not fit the root contract, add a root
+  compatibility wrapper that exposes the required metadata and `verify` script,
+  or retain package-specific workflow logic in that consumer. Do not add
+  consumer-specific logic or weaken the shared contract.
 - For a reusable workflow interface, describe the input, default, permission,
-  and security implications in the README. Check existing callers before
-  renaming an input, changing a default, or changing required permissions.
+  and security implications in the README. A zero-input interface still needs
+  its required root files and metadata documented. Check existing callers
+  before renaming an input, changing a default, or changing required
+  permissions.
 - Treat breaking interface changes as a new major version line. Keep compatible
   additions and behavior fixes on the existing line, and include upgrade notes
   when consumers must change their caller.
@@ -48,5 +61,8 @@ review, so the pull request title should also make a good commit subject.
   workflow still validates all workflow YAML and still exercises the local
   pull-request-title workflow.
 
-See [AGENTS.md](AGENTS.md) for the repository conventions and
-[SECURITY.md](SECURITY.md) for reporting workflow security issues.
+See [AGENTS.md](AGENTS.md) for the repository conventions,
+[SECURITY.md](SECURITY.md) for reporting workflow security issues, and the
+[workflow README](README.md#calling-a-reusable-workflow) for the complete root
+contract. The repository's root `.node-version` is its maintenance/default
+runtime file; it does not replace a caller's required root runtime file.

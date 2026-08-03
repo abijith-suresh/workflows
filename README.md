@@ -13,9 +13,9 @@ consuming repository.
 ## Workflows
 
 - [`bun-quality.yml`](.github/workflows/bun-quality.yml) installs a caller's
-  Bun dependencies and runs its verification command.
+  root Bun dependencies and runs `bun run verify`.
 - [`npm-quality.yml`](.github/workflows/npm-quality.yml) installs a caller's
-  npm dependencies and runs its verification command.
+  root npm dependencies and runs `npm run verify`.
 - [`dependency-review.yml`](.github/workflows/dependency-review.yml) reviews
   dependency changes in a pull request without installing or running project
   code.
@@ -29,12 +29,22 @@ consuming repository.
 
 A caller owns the event trigger and delegates one job to this repository. Pin
 that job to a full commit SHA; the version comment is a readable upgrade hint,
-not the security boundary. These examples use the current released central
-baseline, `v0.1.0` at `b42be9571985efb1ce10970340250fcccc657050`, where the
-existing workflows are available. The npm example pins the immutable workflow
-commit from this PR because the current release predates it. After this change
-is released, replace that pin with the immutable commit for the released version
-and update its comment.
+not the security boundary. The quality examples below use the immutable commit
+being reviewed in this PR; after release, replace it with the immutable commit
+for the released version and update its comment.
+
+Quality workflows have a deliberately strict, zero-input root contract. Before
+calling one, the consumer must put the runtime metadata and lockfile at its
+repository root:
+
+- npm projects must have a root `.node-version`, a root `package-lock.json`,
+  and a root `package.json` whose `packageManager` is exactly
+  `npm@major.minor.patch` (for example, `npm@10.9.2`).
+- Bun projects must have a root `.bun-version` and a root `bun.lock` or
+  `bun.lockb` supported by the selected Bun version.
+- Both projects must define a root `verify` script. The workflows run only
+  `npm run verify` or `bun run verify`; they accept no command or directory
+  overrides.
 
 ```yaml
 name: Quality
@@ -47,21 +57,38 @@ permissions:
 
 jobs:
   npm-quality:
-    uses: abijith-suresh/workflows/.github/workflows/npm-quality.yml@56fbb825c21d55c87fa68fe1b9c8971837c18b2a # PR commit; replace with released commit after merge
-    with:
-      node-version: '22.14.0'
-      npm-version: '10.9.2'
-      working-directory: .
-      verify-command: npm run verify
+    uses: abijith-suresh/workflows/.github/workflows/npm-quality.yml@<immutable-pr-commit> # replace with released commit after merge
+    permissions:
+      contents: read
+
+  bun-quality:
+    uses: abijith-suresh/workflows/.github/workflows/bun-quality.yml@<immutable-pr-commit> # replace with released commit after merge
     permissions:
       contents: read
 ```
 
-Pass both an explicit Node.js version and an explicit npm version. When
-reproducibility matters, use exact patch versions such as `22.14.0` and
-`10.9.2`, not floating major aliases such as `22` or `latest`. The called
-workflow checks out the caller, keys npm's cache with its `package-lock.json`,
-runs `npm ci`, and then runs the supplied verification command.
+Both jobs are zero-input calls: do not add `with`, `verify-command`, or
+`working-directory`. The npm workflow checks out the caller, reads Node from
+its root `.node-version`, reads and validates the root `packageManager` after
+Node setup, installs that exact npm version, caches only the root
+`package-lock.json`, runs `npm ci`, and then runs `npm run verify`. The Bun
+workflow checks out the caller, requires its root `.bun-version`, runs
+`bun install --frozen-lockfile`, and then runs `bun run verify`. Neither
+workflow accepts arbitrary shell commands or uses secrets.
+
+The workflows repository also has a root [`.node-version`](.node-version),
+currently `24.19.0`. It is the authoritative default runtime for maintaining
+this repository locally and is not a hidden override for a caller's file. The
+Node 24 LTS patch was selected from the official
+[Node release index](https://nodejs.org/dist/index.json), which lists
+`v24.19.0` as the LTS `Krypton` release dated 2026-08-03; update this
+maintenance file deliberately when the supported patch changes.
+
+The implementation follows GitHub's
+[reusable workflow guidance](https://docs.github.com/en/actions/sharing-automations/reusing-workflows),
+[`setup-node`'s version-file and cache inputs](https://github.com/actions/setup-node#readme),
+[`setup-bun`'s version-file input](https://github.com/oven-sh/setup-bun#readme),
+and npm's [package.json metadata documentation](https://docs.npmjs.com/cli/v11/configuring-npm/package-json).
 
 ```yaml
 name: Pull request title
@@ -105,30 +132,28 @@ Reusable workflows are jobs, not steps: a job using `uses` cannot also define
 `runs-on` or `steps`. See GitHub's
 [reusable workflow documentation](https://docs.github.com/en/actions/sharing-automations/reusing-workflows).
 
-### `npm-quality.yml` inputs
+### `npm-quality.yml` and `bun-quality.yml` inputs
 
-| Input | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `node-version` | Yes | — | Exact Node.js version passed to `actions/setup-node`. |
-| `npm-version` | Yes | — | Exact npm version installed before `npm ci`. |
-| `working-directory` | No | `.` | Directory containing the npm project and lockfile. |
-| `verify-command` | No | `npm run verify` | Bash command run after `npm ci`. |
+These quality workflows intentionally expose **no inputs**. Their interface is
+root conventions rather than caller-supplied commands:
 
-The interface is intentionally generic. A caller may point
-`working-directory` at a package within a monorepo, but package-specific builds,
-Changesets, matrices, smoke tests, deployment, and release logic remain in the
-caller.
+| Workflow | Required root contract |
+| --- | --- |
+| `npm-quality.yml` | `.node-version`, `package.json` with exact `packageManager: npm@major.minor.patch`, `package-lock.json`, and a `verify` script. |
+| `bun-quality.yml` | `.bun-version`, a Bun lockfile, and a `verify` script. |
 
-### `bun-quality.yml` inputs
+The npm workflow parses `packageManager` as metadata, requires the complete
+`npm@major.minor.patch` form with no range, alias, or prerelease, and installs
+that exact npm version before `npm ci`. The Bun workflow requires
+`.bun-version`; it has no `latest` fallback. Both workflows operate at the
+repository root and do not evaluate arbitrary shell input.
 
-| Input | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `working-directory` | No | `.` | Bun project directory. |
-| `verify-command` | No | `bun run verify` | Command run after `bun install --frozen-lockfile`. |
-
-The Bun workflow checks out the caller repository, uses its `.bun-version`
-when present (otherwise the latest Bun release), installs dependencies, and
-runs the configured command. It therefore executes caller-controlled code.
+This contract favors the dominant repository layout over a generic monorepo
+adapter. An exceptional project should add a root compatibility wrapper that
+exposes the required `verify` script and root lockfile/runtime metadata, or
+retain its package-specific quality workflow locally. Do not weaken the shared
+workflow with directory or command inputs. Package-specific builds, Changesets,
+matrices, smoke tests, deployment, and release logic remain in the caller.
 
 ### `dependency-review.yml` inputs
 
@@ -143,7 +168,7 @@ The supported values are `low`, `moderate`, `high`, and `critical`.
 - Grant only the permissions the called workflow needs: `contents: read` for
   `bun-quality.yml`, `npm-quality.yml`, and `dependency-review.yml`, or
   `pull-requests: read` for `pr-title.yml`. Dependency review does not post
-  pull request comments.
+  pull request comments. The quality workflows need no secrets.
 - Use `pull_request`, not `pull_request_target`, when a workflow checks pull
   request code. Keep fork jobs read-only and do not pass secrets to them.
 - These reusable workflows require no repository secrets. Do not use
