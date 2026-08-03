@@ -37,7 +37,7 @@ jobs:
         run: '"$ACTIONLINT_BIN"'
 
   validate-title:
-    name: Validate title
+    name: Conventional Commit title
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/conventional-commit-title.yml
     permissions:
