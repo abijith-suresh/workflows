@@ -11,7 +11,7 @@ on:
         description: Exact npm version to install when non-empty
         required: false
         type: string
-        default: ''
+        default: ""
       working-directory:
         description: Directory containing the npm project
         required: false

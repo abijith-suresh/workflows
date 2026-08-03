@@ -14,6 +14,8 @@ consuming repository.
 
 - [`bun-quality.yml`](.github/workflows/bun-quality.yml) installs a caller's
   Bun dependencies and runs its verification command.
+- [`npm-monorepo-quality.yml`](.github/workflows/npm-monorepo-quality.yml)
+  installs a caller's npm dependencies and runs its verification command.
 - [`dependency-review.yml`](.github/workflows/dependency-review.yml) reviews
   dependency changes in a pull request without installing or running project
   code.
@@ -27,10 +29,12 @@ consuming repository.
 
 A caller owns the event trigger and delegates one job to this repository. Pin
 that job to a full commit SHA; the version comment is a readable upgrade hint,
-not the security boundary. These examples use the current `main` workflow
-baseline: `0.0.1` is the current released baseline, and `0.1.0` is pending this
-release PR. After PR #6 is merged and its release is created, replace the pins
-with the final released commit SHA and update the comments.
+not the security boundary. These examples use the current released central
+baseline, `v0.1.0` at `b42be9571985efb1ce10970340250fcccc657050`, where the
+existing workflows are available. The npm example pins the immutable workflow
+commit from this PR because the current release predates it. After this change
+is released, replace that pin with the immutable commit for the released version
+and update its comment.
 
 ```yaml
 name: Quality
@@ -42,14 +46,22 @@ permissions:
   contents: read
 
 jobs:
-  bun-quality:
-    uses: abijith-suresh/workflows/.github/workflows/bun-quality.yml@d47573a18810d3ce069939b683a8d7eaa7304267 # current main baseline; replace with the 0.1.0 release commit SHA after PR #6
+  npm-quality:
+    uses: abijith-suresh/workflows/.github/workflows/npm-monorepo-quality.yml@e67dbd4abc1f1f91c718097f36d549d820f9c261 # PR commit; replace with released commit after merge
     with:
+      node-version: '22.14.0'
+      npm-version: '10.9.2'
       working-directory: .
-      verify-command: bun run verify
+      verify-command: npm run verify
     permissions:
       contents: read
 ```
+
+Pass an explicit Node.js version, and an explicit npm version when needed, for
+reproducible runs. Leave `npm-version` empty to keep the npm bundled with the
+selected Node.js version. The called workflow checks out the caller, uses its
+`package-lock.json` for npm caching when available, runs `npm ci`, and then
+runs the supplied verification command.
 
 ```yaml
 name: Pull request title
@@ -62,7 +74,7 @@ permissions:
 
 jobs:
   pr-title:
-    uses: abijith-suresh/workflows/.github/workflows/pr-title.yml@d47573a18810d3ce069939b683a8d7eaa7304267 # current main baseline; replace with the 0.1.0 release commit SHA after PR #6
+    uses: abijith-suresh/workflows/.github/workflows/pr-title.yml@b42be9571985efb1ce10970340250fcccc657050 # v0.1.0
     permissions:
       pull-requests: read
 ```
@@ -78,7 +90,7 @@ permissions:
 
 jobs:
   dependency-review:
-    uses: abijith-suresh/workflows/.github/workflows/dependency-review.yml@d47573a18810d3ce069939b683a8d7eaa7304267 # current main baseline; replace with the 0.1.0 release commit SHA after PR #6
+    uses: abijith-suresh/workflows/.github/workflows/dependency-review.yml@b42be9571985efb1ce10970340250fcccc657050 # v0.1.0
     with:
       fail-on-severity: high
     permissions:
@@ -92,6 +104,18 @@ quality and build workflows separate in the consuming repository.
 Reusable workflows are jobs, not steps: a job using `uses` cannot also define
 `runs-on` or `steps`. See GitHub's
 [reusable workflow documentation](https://docs.github.com/en/actions/sharing-automations/reusing-workflows).
+
+### `npm-monorepo-quality.yml` inputs
+
+| Input | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `node-version` | Yes | — | Node.js version passed to `actions/setup-node`. |
+| `npm-version` | No | Empty | Exact npm version to install; empty keeps Node.js's bundled npm. |
+| `working-directory` | No | `.` | Directory containing the npm project and lockfile. |
+| `verify-command` | No | `npm run verify` | Bash command run after `npm ci`. |
+
+The interface is intentionally generic: outpost-specific Node matrices, builds,
+smoke tests, and release jobs remain local to the outpost repository.
 
 ### `bun-quality.yml` inputs
 
@@ -115,8 +139,9 @@ The supported values are `low`, `moderate`, `high`, and `critical`.
 ### Permissions and security
 
 - Grant only the permissions the called workflow needs: `contents: read` for
-  `bun-quality.yml` and `dependency-review.yml`, or `pull-requests: read` for
-  `pr-title.yml`. Dependency review does not post pull request comments.
+  `bun-quality.yml`, `npm-monorepo-quality.yml`, and `dependency-review.yml`,
+  or `pull-requests: read` for `pr-title.yml`. Dependency review does not post
+  pull request comments.
 - Use `pull_request`, not `pull_request_target`, when a workflow checks pull
   request code. Keep fork jobs read-only and do not pass secrets to them.
 - These reusable workflows require no repository secrets. Do not use
@@ -128,9 +153,11 @@ The supported values are `low`, `moderate`, `high`, and `critical`.
 
 Consuming repositories choose their own triggers, application tests and build
 matrices, deployments, environments and approvals, secrets, publishing, and
-application-specific release automation. Branch protection is a repository
-setting, and releases are tags/GitHub releases or release workflows; neither
-is implicitly provided to consuming repositories by these reusable workflows.
+application-specific release automation. For outpost, its matrix, build,
+smoke-test, and release jobs remain local to that repository. Branch protection
+is a repository setting, and releases are tags/GitHub releases or release
+workflows; neither is implicitly provided to consuming repositories by these
+reusable workflows.
 
 ## Versioning and learning notes
 
@@ -156,10 +183,11 @@ on pull requests). It opens or updates one release PR containing changes to
 release PR is merged, Release Please creates the corresponding SemVer tag and
 GitHub Release.
 
-The mistaken `v1.0.0` tag was deleted. `0.0.1` is the current released
-baseline, and `0.1.0` is pending this release PR. Its corresponding SemVer tag
-and GitHub Release will be created only after PR #6 is merged. The manifest and
-`VERSION` file in this PR both record `0.1.0`; the simple strategy is configured
+The mistaken `v1.0.0` tag was deleted. `v0.1.0` is the current released
+baseline at commit `b42be9571985efb1ce10970340250fcccc657050`. Future workflow
+changes should be consumed through the immutable commit for the release that
+contains them; tags and GitHub Releases are created only by the release process
+after a change is merged. The simple strategy is configured
 to use `VERSION`, and component names are omitted so future tags continue to be
 generated without a component prefix.
 
