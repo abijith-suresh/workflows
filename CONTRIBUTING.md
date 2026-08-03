@@ -64,5 +64,6 @@ review, so the pull request title should also make a good commit subject.
 See [AGENTS.md](AGENTS.md) for the repository conventions,
 [SECURITY.md](SECURITY.md) for reporting workflow security issues, and the
 [workflow README](README.md#calling-a-reusable-workflow) for the complete root
-contract. The repository's root `.node-version` is its maintenance/default
-runtime file; it does not replace a caller's required root runtime file.
+contract. The npm quality workflow reads the caller's required root
+`.node-version`; this repository does not provide a central runtime file that
+controls callers.

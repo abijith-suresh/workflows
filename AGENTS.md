@@ -42,9 +42,9 @@ From the repository root, run `git diff --check` and `actionlint` (v1.7.12
 when matching repository policy). Validate changed YAML and JSON, format files
 when a formatter is configured, inspect the rendered YAML, and inspect the
 final diff as well. Keep the repository's policy workflow deterministic and
-free of application-specific CI. The root `.node-version` is the maintenance
-and default runtime file for this repository; caller workflows read the
-corresponding root file from the checked-out caller.
+free of application-specific CI. The npm quality workflow reads
+`.node-version` from the checked-out caller; this repository does not provide a
+central runtime file that controls callers.
 
 ## Releases and documentation
 
