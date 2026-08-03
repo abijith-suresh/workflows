@@ -73,7 +73,7 @@ input-based interface: remove those inputs and add the required root metadata
 before switching the workflow pin. The npm workflow checks out the caller,
 reads Node from its root `.node-version`, reads and validates the root
 `packageManager` after Node setup, installs that exact npm version, caches only
- the root `package-lock.json`, runs `npm ci`, and then runs `npm run verify`.
+`package-lock.json` at the root, runs `npm ci`, and then runs `npm run verify`.
 The Bun workflow checks out the caller, requires its root `.bun-version`, runs
 `bun install --frozen-lockfile`, and then runs `bun run verify`. Neither
 workflow accepts arbitrary shell commands or uses secrets.
