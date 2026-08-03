@@ -14,8 +14,8 @@ consuming repository.
 
 - [`bun-quality.yml`](.github/workflows/bun-quality.yml) installs a caller's
   Bun dependencies and runs its verification command.
-- [`npm-monorepo-quality.yml`](.github/workflows/npm-monorepo-quality.yml)
-  installs a caller's npm dependencies and runs its verification command.
+- [`npm-quality.yml`](.github/workflows/npm-quality.yml) installs a caller's
+  npm dependencies and runs its verification command.
 - [`dependency-review.yml`](.github/workflows/dependency-review.yml) reviews
   dependency changes in a pull request without installing or running project
   code.
@@ -47,7 +47,7 @@ permissions:
 
 jobs:
   npm-quality:
-    uses: abijith-suresh/workflows/.github/workflows/npm-monorepo-quality.yml@e67dbd4abc1f1f91c718097f36d549d820f9c261 # PR commit; replace with released commit after merge
+    uses: abijith-suresh/workflows/.github/workflows/npm-quality.yml@e67dbd4abc1f1f91c718097f36d549d820f9c261 # PR commit; replace with released commit after merge
     with:
       node-version: '22.14.0'
       npm-version: '10.9.2'
@@ -57,11 +57,11 @@ jobs:
       contents: read
 ```
 
-Pass an explicit Node.js version, and an explicit npm version when needed, for
-reproducible runs. Leave `npm-version` empty to keep the npm bundled with the
-selected Node.js version. The called workflow checks out the caller, uses its
-`package-lock.json` for npm caching when available, runs `npm ci`, and then
-runs the supplied verification command.
+Pass both an explicit Node.js version and an explicit npm version. When
+reproducibility matters, use exact patch versions such as `22.14.0` and
+`10.9.2`, not floating major aliases such as `22` or `latest`. The called
+workflow checks out the caller, keys npm's cache with its `package-lock.json`,
+runs `npm ci`, and then runs the supplied verification command.
 
 ```yaml
 name: Pull request title
@@ -105,17 +105,19 @@ Reusable workflows are jobs, not steps: a job using `uses` cannot also define
 `runs-on` or `steps`. See GitHub's
 [reusable workflow documentation](https://docs.github.com/en/actions/sharing-automations/reusing-workflows).
 
-### `npm-monorepo-quality.yml` inputs
+### `npm-quality.yml` inputs
 
 | Input | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `node-version` | Yes | — | Node.js version passed to `actions/setup-node`. |
-| `npm-version` | No | Empty | Exact npm version to install; empty keeps Node.js's bundled npm. |
+| `node-version` | Yes | — | Exact Node.js version passed to `actions/setup-node`. |
+| `npm-version` | Yes | — | Exact npm version installed before `npm ci`. |
 | `working-directory` | No | `.` | Directory containing the npm project and lockfile. |
 | `verify-command` | No | `npm run verify` | Bash command run after `npm ci`. |
 
-The interface is intentionally generic: outpost-specific Node matrices, builds,
-smoke tests, and release jobs remain local to the outpost repository.
+The interface is intentionally generic. A caller may point
+`working-directory` at a package within a monorepo, but package-specific builds,
+Changesets, matrices, smoke tests, deployment, and release logic remain in the
+caller.
 
 ### `bun-quality.yml` inputs
 
@@ -139,8 +141,8 @@ The supported values are `low`, `moderate`, `high`, and `critical`.
 ### Permissions and security
 
 - Grant only the permissions the called workflow needs: `contents: read` for
-  `bun-quality.yml`, `npm-monorepo-quality.yml`, and `dependency-review.yml`,
-  or `pull-requests: read` for `pr-title.yml`. Dependency review does not post
+  `bun-quality.yml`, `npm-quality.yml`, and `dependency-review.yml`, or
+  `pull-requests: read` for `pr-title.yml`. Dependency review does not post
   pull request comments.
 - Use `pull_request`, not `pull_request_target`, when a workflow checks pull
   request code. Keep fork jobs read-only and do not pass secrets to them.

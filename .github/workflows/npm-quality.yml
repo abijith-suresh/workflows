@@ -1,17 +1,16 @@
-name: npm monorepo quality
+name: npm quality
 
 on:
   workflow_call:
     inputs:
       node-version:
-        description: Node.js version to install
+        description: Exact Node.js version to install
         required: true
         type: string
       npm-version:
-        description: Exact npm version to install when non-empty
-        required: false
+        description: Exact npm version to install
+        required: true
         type: string
-        default: ""
       working-directory:
         description: Directory containing the npm project
         required: false
@@ -47,7 +46,6 @@ jobs:
           cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 
       - name: Install requested npm version
-        if: inputs.npm-version != ''
         shell: bash
         env:
           NPM_VERSION: ${{ inputs.npm-version }}
