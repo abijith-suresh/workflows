@@ -227,11 +227,14 @@ updating the protection rule at the same time. Note that the displayed name is
 the job name inside the called workflow (for example `Validate title`), not the
 workflow file's top-level `name:` field.
 
-The repository's own `policy.yml` runs two checks on its pull requests: the
-local `Validate workflow YAML` job and the reusable title call, displayed as
-`validate-title / Validate title`. The title check is exempt for Dependabot
-pull requests, so a Dependabot PR should never require `validate-title` to be
-present.
+GitHub uses the caller job's display name (its `name:` if set, otherwise its
+job ID) as the left half of the check name. Consumers should keep caller job
+IDs and display names identical to the table above. The repository's own
+`policy.yml` runs two checks on its pull requests: the local `Validate workflow
+YAML` job and the reusable title call from the `validate-title` job (display
+name `Conventional Commit title`), shown as `Conventional Commit title /
+Validate title`. The title check is exempt for Dependabot pull requests, so a
+Dependabot PR should never require it to be present.
 
 ## What stays local to callers
 
