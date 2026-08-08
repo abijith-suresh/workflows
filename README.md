@@ -31,10 +31,8 @@ consuming repository.
 
 A caller owns the event trigger and delegates one job to this repository. Pin
 that job to a full commit SHA; the version comment is a readable upgrade hint,
-not the security boundary. The npm quality example below uses the immutable
-commit being reviewed in this PR; after release, replace it with the immutable
-commit for the released version and update its comment. The Bun workflow in this
-PR uses the same pinned, zero-input pattern.
+not the security boundary. The examples below pin the immutable commit for the
+current released baseline, `v0.3.0` at `0f257b2642d2a010fefe0ff9d03374799d73eb44`.
 
 The quality workflows have deliberately strict, zero-input root contracts.
 Before calling one, the consumer must put the runtime metadata, package
@@ -203,6 +201,37 @@ The supported values are `low`, `moderate`, `high`, and `critical`.
   `secrets: inherit` unless a separately reviewed workflow genuinely needs it.
 - All third-party actions in this repository are pinned to full commit SHAs.
   Review pin changes as executable CI changes.
+
+## Check names & branch protection
+
+Checks from reusable workflows display on pull requests as
+`<caller job name> / <called workflow job name>`. The left half is the caller's
+job in its own workflow; the right half is the job name inside the called
+workflow. Branch protection rules can require these exact combined strings, so
+both halves must be stable.
+
+Consumers must use the standard caller job names below. They match the
+convention used across this account's repositories (`wallpapers`, `note-app`,
+and others) so a required check configured once works everywhere:
+
+| Caller job name | Called workflow | Required-check string for branch protection |
+| --- | --- | --- |
+| `pr-title` | `conventional-commit-title.yml` | `pr-title / Validate title` |
+| `bun-quality` | `bun-quality.yml` | `bun-quality / Install and verify` |
+| `npm-quality` | `npm-quality.yml` | `npm-quality / Install and verify` |
+| `dependency-review` | `dependency-review.yml` | `dependency-review / Review dependency changes` |
+
+Keep the caller job name and the called workflow's job name aligned with this
+table. Changing either half breaks branch protection requirements and requires
+updating the protection rule at the same time. Note that the displayed name is
+the job name inside the called workflow (for example `Validate title`), not the
+workflow file's top-level `name:` field.
+
+The repository's own `policy.yml` runs two checks on its pull requests: the
+local `Validate workflow YAML` job and the reusable title call, displayed as
+`validate-title / Validate title`. The title check is exempt for Dependabot
+pull requests, so a Dependabot PR should never require `validate-title` to be
+present.
 
 ## What stays local to callers
 
