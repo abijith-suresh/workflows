@@ -67,12 +67,12 @@ permissions:
 
 jobs:
   npm-quality:
-    uses: abijith-suresh/workflows/.github/workflows/npm-quality.yml@6136c325cd1618188affefe2be3a343953fa65af # PR commit; replace with released commit after merge
+    uses: abijith-suresh/workflows/.github/workflows/npm-quality.yml@0f257b2642d2a010fefe0ff9d03374799d73eb44 # v0.3.0
     permissions:
       contents: read
 
   bun-quality:
-    uses: abijith-suresh/workflows/.github/workflows/bun-quality.yml@eb46f93aba5dd01d2d951d10b2c31f1b2c73b106 # PR commit; replace with released commit after merge
+    uses: abijith-suresh/workflows/.github/workflows/bun-quality.yml@0f257b2642d2a010fefe0ff9d03374799d73eb44 # v0.3.0
     permissions:
       contents: read
 
@@ -114,7 +114,7 @@ permissions:
 
 jobs:
   validate-title:
-    uses: abijith-suresh/workflows/.github/workflows/conventional-commit-title.yml@51c520717d5d95fac6b0c9dc54eb81333097e16c # PR commit; replace with released commit after merge
+    uses: abijith-suresh/workflows/.github/workflows/conventional-commit-title.yml@0f257b2642d2a010fefe0ff9d03374799d73eb44 # v0.3.0
     permissions:
       pull-requests: read
 ```
@@ -136,7 +136,7 @@ permissions:
 
 jobs:
   dependency-review:
-    uses: abijith-suresh/workflows/.github/workflows/dependency-review.yml@b42be9571985efb1ce10970340250fcccc657050 # v0.1.0
+    uses: abijith-suresh/workflows/.github/workflows/dependency-review.yml@0f257b2642d2a010fefe0ff9d03374799d73eb44 # v0.3.0
     with:
       fail-on-severity: high
     permissions:
@@ -238,8 +238,8 @@ on pull requests). It opens or updates one release PR containing changes to
 release PR is merged, Release Please creates the corresponding SemVer tag and
 GitHub Release.
 
-The mistaken `v1.0.0` tag was deleted. `v0.1.0` is the current released
-baseline at commit `b42be9571985efb1ce10970340250fcccc657050`. Future workflow
+The mistaken `v1.0.0` tag was deleted. `v0.3.0` is the current released
+baseline at commit `0f257b2642d2a010fefe0ff9d03374799d73eb44`. Future workflow
 changes should be consumed through the immutable commit for the release that
 contains them; tags and GitHub Releases are created only by the release process
 after a change is merged. The simple strategy is configured
