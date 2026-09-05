@@ -43,10 +43,11 @@ commit subject.
   validation job convenient, and treat fork pull requests as untrusted.
 - The shared quality workflows are zero-input root contracts. npm callers need
   root `.node-version`, `package-lock.json`, and `package.json` with an exact
-  `packageManager` value matching `npm@major.minor.patch`; Bun callers need an
-  exact root `.bun-version` in `major.minor.patch` form, root `bun.lock`, and
-  root `package.json` with an exact `packageManager` value matching that Bun
-  version as `bun@major.minor.patch`. Both need a root `verify` script. The workflows run
+  `packageManager` value matching `npm@major.minor.patch`; Bun callers need a
+  root `mise.toml` that declares the Bun version exactly once under `[tools]`
+  as `bun = "major.minor.patch"`, root `bun.lock`, and root `package.json` with
+  an exact `packageManager` value matching that Bun version as
+  `bun@major.minor.patch`. Both need a root `verify` script. The workflows run
   only `npm run verify` or `bun run verify` and must not accept arbitrary shell
   commands or `working-directory` overrides.
 - If an exceptional project does not fit the root contract, add a root
@@ -70,6 +71,6 @@ See [AGENTS.md](AGENTS.md) for the repository conventions,
 [SECURITY.md](SECURITY.md) for reporting workflow security issues, and the
 [workflow README](README.md#calling-a-reusable-workflow) for the complete root
 contract. The quality workflows read the caller's required root runtime files; this
-repository does not provide a central `.bun-version` or other runtime file that
-controls callers. It is not a Bun consumer, so do not add `.bun-version` here:
+repository does not provide a central `mise.toml` or other runtime file that
+controls callers. It is not a Bun consumer, so do not add a Bun version pin here:
 a file in this repository would not affect consuming repositories.

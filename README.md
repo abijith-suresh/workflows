@@ -41,18 +41,23 @@ manifest, lockfile, and verification script at its repository root:
 - npm projects must have a root `.node-version`, a root `package-lock.json`,
   and a root `package.json` whose `packageManager` is exactly
   `npm@major.minor.patch` (for example, `npm@10.9.2`).
-- Bun projects must have an exact root `.bun-version`, a root `bun.lock`, and a
-  root `package.json` whose exact `packageManager` value agrees with that Bun
-  version (for example, `bun@1.2.3`).
+- Bun projects must have a root `mise.toml` that declares the Bun version
+  exactly once under `[tools]` as `bun = "major.minor.patch"` (for example,
+  `bun = "1.4.1"`), a root `bun.lock`, and a root `package.json` whose exact
+  `packageManager` value agrees with that Bun version (for example,
+  `bun@1.4.1`).
 - Both projects must define a root `verify` script. The workflows run only
   `npm run verify` or `bun run verify` and accept no command or directory
   overrides.
 
-The Bun workflow requires the caller's root `.bun-version`; it never falls
-back to `latest`. Its migration is a breaking change for callers of the old
-input-based interface: remove `working-directory` and `verify-command`, move
-or wrap the project so the required root files exist, and use the zero-input
-job call.
+The Bun workflow requires the caller's root `mise.toml` Bun declaration; it
+never falls back to `latest`. Its migration from v0.3.0 is a breaking change
+for Bun callers: move the version from the root `.bun-version` file into a
+`[tools]` declaration in root `mise.toml` (delete the dotfile once the pin is
+moved), and switch the workflow pin to the release containing this change.
+Callers of the older input-based interface must still remove
+`working-directory` and `verify-command`, move or wrap the project so the
+required root files exist, and use the zero-input job call.
 
 ```yaml
 name: Quality
@@ -83,14 +88,14 @@ before switching the workflow pin. The npm workflow checks out the caller,
 reads Node from its root `.node-version`, reads and validates the root
 `packageManager` after Node setup, installs that exact npm version, caches only
 `package-lock.json` at the root, runs `npm ci`, and then runs `npm run verify`.
-The Bun workflow checks out the caller, validates an exact root `.bun-version`,
-reads the root `packageManager` with Bun's JSON parser, and fails before install
-if it is not the matching exact `bun@major.minor.patch` value. It then runs
-`bun install --frozen-lockfile` and `bun run verify` at the root. Neither
-workflow uses secrets.
+The Bun workflow checks out the caller, validates an exact Bun version in the
+root `mise.toml`, reads the root `packageManager` with Bun's JSON parser, and
+fails before install if it is not the matching exact `bun@major.minor.patch`
+value. It then runs `bun install --frozen-lockfile` and `bun run verify` at
+the root. Neither workflow uses secrets.
 
 The quality workflows read runtime files from the checked-out caller repository.
-The workflows repository does not provide a central `.bun-version` (or a
+The workflows repository does not provide a central `mise.toml` (or a
 central runtime file that controls callers); this repository is not a Bun
 consumer, and a file here would not affect callers. Maintainers should use
 local runtime tooling when working on this repository.
@@ -98,7 +103,7 @@ local runtime tooling when working on this repository.
 The implementation follows GitHub's
 [reusable workflow guidance](https://docs.github.com/en/actions/sharing-automations/reusing-workflows),
 [`setup-node`'s version-file and cache inputs](https://github.com/actions/setup-node#readme),
-[`setup-bun`'s version-file input](https://github.com/oven-sh/setup-bun#readme),
+[`setup-bun`'s version input](https://github.com/oven-sh/setup-bun#readme),
 and npm's [package.json metadata documentation](https://docs.npmjs.com/cli/v11/configuring-npm/package-json).
 
 ```yaml
@@ -157,18 +162,19 @@ are root conventions rather than caller-supplied commands:
 | Workflow | Required root contract |
 | --- | --- |
 | `npm-quality.yml` | `.node-version`, `package.json` with exact `packageManager: npm@major.minor.patch`, `package-lock.json`, and a `verify` script. |
-| `bun-quality.yml` | Exact `.bun-version`, `package.json` with an agreeing exact `packageManager: bun@major.minor.patch`, `bun.lock`, and a `verify` script. |
+| `bun-quality.yml` | Root `mise.toml` with an exact `[tools]` Bun version, `package.json` with an agreeing exact `packageManager: bun@major.minor.patch`, `bun.lock`, and a `verify` script. |
 
 The npm workflow parses `packageManager` as metadata, requires the complete
 `npm@major.minor.patch` form with no range, alias, or prerelease, and installs
 that exact npm version before `npm ci`. It operates at the caller's repository
 root and does not evaluate arbitrary shell input.
 
-The Bun workflow uses the documented `bun-version-file: .bun-version` input,
-validates that the root `.bun-version` is an exact `major.minor.patch` and that
-Bun's parsed root `packageManager` is exactly the matching
-`bun@major.minor.patch`, then runs the frozen install and verification script
-at the caller's root. It has no `latest` fallback. A Bun caller that cannot provide this root contract
+The Bun workflow parses the Bun version from the root `mise.toml`, validates
+that it is an exact `major.minor.patch` with no range, alias, prerelease, or
+`latest` fallback, passes it to `setup-bun` as the documented `bun-version`
+input, and validates that Bun's parsed root `packageManager` is exactly the
+matching `bun@major.minor.patch`, then runs the frozen install and verification
+script at the caller's root. A Bun caller that cannot provide this root contract
 should keep its quality workflow local. In particular, snapserve remains local
 until it provides a root compatibility wrapper with the required Bun metadata,
 lockfile, and `verify` script.

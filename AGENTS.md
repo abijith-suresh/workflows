@@ -14,10 +14,10 @@ inspect.
 - The shared quality workflows are intentionally zero-input root contracts:
   npm callers provide root `.node-version`, `package-lock.json`, and
   `package.json` with exact `packageManager: npm@major.minor.patch`; Bun
-  callers provide an exact root `.bun-version` in `major.minor.patch` form,
-  root `bun.lock`, and root `package.json` with an exact
-  `packageManager: bun@major.minor.patch` value equal to `.bun-version`. Both
-  provide a root `verify` script. They run only `npm run verify` or
+  callers provide a root `mise.toml` declaring the Bun version exactly once
+  under `[tools]` as `bun = "major.minor.patch"`, root `bun.lock`, and root
+  `package.json` with an exact `packageManager: bun@major.minor.patch` value
+  equal to the `mise.toml` Bun version. Both provide a root `verify` script. They run only `npm run verify` or
   `bun run verify` and must not accept arbitrary shell commands or directory
   overrides.
 - If a project is exceptional, add a root compatibility wrapper that exposes
@@ -52,8 +52,8 @@ when a formatter is configured, inspect the rendered YAML, and inspect the
 final diff as well. Keep the repository's policy workflow deterministic and
 free of application-specific CI. The quality workflows read runtime files
 from the checked-out caller; this repository does not provide a central
-`.bun-version` or other runtime file that controls callers. This repository is
-not a Bun consumer, so adding `.bun-version` here would not affect callers.
+`mise.toml` or other runtime file that controls callers. This repository is
+not a Bun consumer, so adding a Bun version pin here would not affect callers.
 
 ## Releases and documentation
 
