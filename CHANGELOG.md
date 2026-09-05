@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/abijith-suresh/workflows/compare/v0.3.0...v0.4.0) (2026-09-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ci:** read Bun version from root mise.toml ([#15](https://github.com/abijith-suresh/workflows/issues/15))
+
+### Features
+
+* **ci:** read Bun version from root mise.toml ([#15](https://github.com/abijith-suresh/workflows/issues/15)) ([1954c96](https://github.com/abijith-suresh/workflows/commit/1954c96389166f2d0e54a9a94df174270f3ba27a))
+
 ## [0.3.0](https://github.com/abijith-suresh/workflows/compare/v0.2.0...v0.3.0) (2026-08-03)
 
 
