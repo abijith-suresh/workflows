@@ -16,10 +16,9 @@ inspect.
   `package.json` with exact `packageManager: npm@major.minor.patch`; Bun
   callers provide a root `mise.toml` declaring the Bun version exactly once
   under `[tools]` as `bun = "major.minor.patch"`, root `bun.lock`, and root
-  `package.json` with an exact `packageManager: bun@major.minor.patch` value
-  equal to the `mise.toml` Bun version. Both provide a root `verify` script. They run only `npm run verify` or
-  `bun run verify` and must not accept arbitrary shell commands or directory
-  overrides.
+  `package.json`. Both provide a root `verify` script. They run only
+  `npm run verify` or `bun run verify` and must not accept arbitrary shell
+  commands or directory overrides.
 - If a project is exceptional, add a root compatibility wrapper that exposes
   this contract or keep package-specific quality logic in the consumer. Projects
   such as snapserve remain local until they provide that wrapper. Do not
