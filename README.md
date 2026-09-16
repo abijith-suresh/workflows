@@ -43,9 +43,7 @@ manifest, lockfile, and verification script at its repository root:
   `npm@major.minor.patch` (for example, `npm@10.9.2`).
 - Bun projects must have a root `mise.toml` that declares the Bun version
   exactly once under `[tools]` as `bun = "major.minor.patch"` (for example,
-  `bun = "1.4.1"`), a root `bun.lock`, and a root `package.json` whose exact
-  `packageManager` value agrees with that Bun version (for example,
-  `bun@1.4.1`).
+  `bun = "1.4.1"`), a root `bun.lock`, and a root `package.json`.
 - Both projects must define a root `verify` script. The workflows run only
   `npm run verify` or `bun run verify` and accept no command or directory
   overrides.
@@ -89,9 +87,8 @@ reads Node from its root `.node-version`, reads and validates the root
 `packageManager` after Node setup, installs that exact npm version, caches only
 `package-lock.json` at the root, runs `npm ci`, and then runs `npm run verify`.
 The Bun workflow checks out the caller, validates an exact Bun version in the
-root `mise.toml`, reads the root `packageManager` with Bun's JSON parser, and
-fails before install if it is not the matching exact `bun@major.minor.patch`
-value. It then runs `bun install --frozen-lockfile` and `bun run verify` at
+root `mise.toml`, passes it to `setup-bun`, and then runs
+`bun install --frozen-lockfile` and `bun run verify` at
 the root. Neither workflow uses secrets.
 
 The quality workflows read runtime files from the checked-out caller repository.
@@ -162,7 +159,7 @@ are root conventions rather than caller-supplied commands:
 | Workflow | Required root contract |
 | --- | --- |
 | `npm-quality.yml` | `.node-version`, `package.json` with exact `packageManager: npm@major.minor.patch`, `package-lock.json`, and a `verify` script. |
-| `bun-quality.yml` | Root `mise.toml` with an exact `[tools]` Bun version, `package.json` with an agreeing exact `packageManager: bun@major.minor.patch`, `bun.lock`, and a `verify` script. |
+| `bun-quality.yml` | Root `mise.toml` with an exact `[tools]` Bun version, `package.json`, `bun.lock`, and a `verify` script. |
 
 The npm workflow parses `packageManager` as metadata, requires the complete
 `npm@major.minor.patch` form with no range, alias, or prerelease, and installs
