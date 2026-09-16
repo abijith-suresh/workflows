@@ -169,9 +169,8 @@ root and does not evaluate arbitrary shell input.
 The Bun workflow parses the Bun version from the root `mise.toml`, validates
 that it is an exact `major.minor.patch` with no range, alias, prerelease, or
 `latest` fallback, passes it to `setup-bun` as the documented `bun-version`
-input, and validates that Bun's parsed root `packageManager` is exactly the
-matching `bun@major.minor.patch`, then runs the frozen install and verification
-script at the caller's root. A Bun caller that cannot provide this root contract
+input, then runs the frozen install and verification script at the caller's
+root. A Bun caller that cannot provide this root contract
 should keep its quality workflow local. In particular, snapserve remains local
 until it provides a root compatibility wrapper with the required Bun metadata,
 lockfile, and `verify` script.
