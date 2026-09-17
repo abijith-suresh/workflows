@@ -43,6 +43,10 @@ commit subject.
   review the upstream change before updating a pin.
 - Keep permissions at the narrowest useful scope. Do not add secrets to make a
   validation job convenient, and treat fork pull requests as untrusted.
+- Use the reusable Release Please workflow for releases. Keep
+  `include-v-in-tag` and `include-v-in-release-name` set to `false`; preserve
+  historical `v` tags and establish a no-`v` baseline before the first
+  migrated release.
 - The shared quality workflows are zero-input root contracts (see AGENTS.md and
   the workflow files, which are the source of truth). Do not add
   consumer-specific logic or weaken the shared contract.

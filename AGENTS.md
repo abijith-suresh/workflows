@@ -14,14 +14,12 @@ inspect.
 - The shared quality workflows are intentionally zero-input root contracts,
   documented in their workflow files (the files are the source of truth):
   Bun callers provide a root `mise.toml` with exactly one `bun` version under
-  `[tools]` plus `node` (for example `bun = "1.4.1"`, `node = "24.20.0"`),
-  a root `bun.lock`, and a root `package.json`; npm callers provide a root
+  `[tools]` (for example `bun = "1.4.1"`), a root `bun.lock`, and a root
+  `package.json`; npm callers provide a root
   `mise.toml` with exactly one `node` and one `npm` version under `[tools]`
   (for example `node = "24.20.0"`, `npm = "11.16.0"`) and a root
-  `package-lock.json`. Both provide a root `verify` script containing only the
-  standard chain (Bun: `type-check`, `lint`, `format:check`, `test`, `build`;
-  npm: `format:check`, `lint`, `typecheck`, `test`, `build`) with no extra
-  steps. They run only that script and must not accept arbitrary shell
+  `package-lock.json` and `package.json`. Both provide a root `verify` script.
+  The workflows run only that script and must not accept arbitrary shell
   commands or directory overrides.
 - If a project is exceptional, add a root compatibility wrapper that exposes
   this contract or keep package-specific quality logic in the consumer. Projects
@@ -35,6 +33,10 @@ inspect.
   the behavior the repository actually owns.
 - Default to least privilege. A called workflow cannot grant permissions that
   its caller did not grant, so document the minimum caller permissions.
+- The reusable Release Please workflow is the source of truth for release
+  execution. Release callers provide their package metadata and token, set both
+  `include-v-in-tag` and `include-v-in-release-name` to `false`, and trigger it
+  from their own default branch. The called workflow must not hardcode `main`.
 - Pin every third-party action to a full commit SHA and retain a version comment.
   Review pin updates as executable infrastructure, not as cosmetic dependency
   changes. Verify each SHA against its official upstream release tag.
