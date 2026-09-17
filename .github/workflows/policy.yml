@@ -39,24 +39,33 @@ jobs:
           ACTIONLINT_BIN: ${{ runner.temp }}/actionlint/actionlint
         run: '"$ACTIONLINT_BIN"'
 
-      - name: Check changed lines for whitespace errors
+      - name: Check changed content for whitespace errors
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          BEFORE_SHA: ${{ github.event.before }}
-          CURRENT_SHA: ${{ github.sha }}
           EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
           zero_sha=0000000000000000000000000000000000000000
 
-          if [[ "$EVENT_NAME" == pull_request ]]; then
-            git diff --check "$BASE_SHA" "$CURRENT_SHA"
-          elif [[ "$BEFORE_SHA" != "$zero_sha" ]]; then
-            git diff --check "$BEFORE_SHA" "$CURRENT_SHA"
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            base_sha="$PR_BASE_SHA"
           else
-            git diff-tree --check --root -r "$CURRENT_SHA"
+            base_sha="$PUSH_BEFORE_SHA"
           fi
+
+          if [[ -z "$base_sha" || -z "$AFTER_SHA" ]]; then
+            echo "Missing comparison SHA." >&2
+            exit 1
+          fi
+
+          if [[ "$base_sha" == "$zero_sha" ]]; then
+            base_sha="$(git hash-object -t tree /dev/null)"
+          fi
+
+          git diff --check "$base_sha" "$AFTER_SHA" --
 
       - name: Validate release metadata JSON
         shell: bash
