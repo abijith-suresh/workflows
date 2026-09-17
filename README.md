@@ -77,7 +77,7 @@ jobs:
       RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 ```
 
-Release callers keep `release-please-config.json` and `.release-please-manifest.json` at their root, plus a fine-grained `RELEASE_PLEASE_TOKEN` (Contents/Issues/Pull requests: read and write). Every Release Please package must set `include-v-in-tag: false` and `include-v-in-release-name: false`. The reusable workflow checks this policy before it runs Release Please. Tags have no `v` prefix. Existing `v` tags remain historical; establish the no-`v` baseline before the first migrated release. Never use `secrets: inherit`.
+Release callers keep `release-please-config.json` and `.release-please-manifest.json` at their root, plus a fine-grained `RELEASE_PLEASE_TOKEN` (Contents/Issues/Pull requests: read and write). Every Release Please package must set `include-v-in-tag: false` and `include-v-in-release-name: false`. The reusable workflow checks this policy before it runs Release Please. Tags have no `v` prefix. Existing `v` tags remain historical. Keep each manifest at its current version; Release Please uses that baseline and generates the next tag without `v`. Do not delete or duplicate tags. Never use `secrets: inherit`.
 
 ## Permissions and security
 
