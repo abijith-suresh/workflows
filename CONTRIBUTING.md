@@ -45,11 +45,10 @@ commit subject.
   root `.node-version`, `package-lock.json`, and `package.json` with an exact
   `packageManager` value matching `npm@major.minor.patch`; Bun callers need a
   root `mise.toml` that declares the Bun version exactly once under `[tools]`
-  as `bun = "major.minor.patch"`, root `bun.lock`, and root `package.json` with
-  an exact `packageManager` value matching that Bun version as
-  `bun@major.minor.patch`. Both need a root `verify` script. The workflows run
-  only `npm run verify` or `bun run verify` and must not accept arbitrary shell
-  commands or `working-directory` overrides.
+  as `bun = "major.minor.patch"`, root `bun.lock`, and root `package.json`.
+  Both need a root `verify` script. The workflows run only `npm run verify` or
+  `bun run verify` and must not accept arbitrary shell commands or
+  `working-directory` overrides.
 - If an exceptional project does not fit the root contract, add a root
   compatibility wrapper that exposes the required metadata and `verify` script,
   or retain package-specific workflow logic in that consumer. Projects such as

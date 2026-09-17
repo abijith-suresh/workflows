@@ -46,31 +46,6 @@ jobs:
         with:
           bun-version: ${{ env.bun_version }}
 
-      - name: Validate Bun package metadata
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ ! -f package.json ]]; then
-            echo "Missing required root package.json; declare packageManager as bun@major.minor.patch." >&2
-            exit 1
-          fi
-
-          if ! package_manager="$(bun -e 'const packageJson = await Bun.file("package.json").json(); console.log(typeof packageJson?.packageManager === "string" ? packageJson.packageManager : "");')"; then
-            echo "Root package.json could not be parsed as JSON by Bun." >&2
-            exit 1
-          fi
-
-          if [[ ! "$package_manager" =~ ^bun@(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "Root package.json must declare an exact packageManager as bun@major.minor.patch; found '$package_manager'." >&2
-            exit 1
-          fi
-
-          declared_version="${package_manager#bun@}"
-          if [[ "$declared_version" != "$bun_version" ]]; then
-            echo "Root mise.toml Bun version ('$bun_version') must match package.json packageManager ('$package_manager')." >&2
-            exit 1
-          fi
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
