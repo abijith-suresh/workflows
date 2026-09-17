@@ -38,6 +38,16 @@ jobs:
           ACTIONLINT_BIN: ${{ runner.temp }}/actionlint/actionlint
         run: '"$ACTIONLINT_BIN"'
 
+      - name: Check for whitespace errors
+        run: git diff --check
+
+      - name: Validate release metadata JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m json.tool release-please-config.json > /dev/null
+          python3 -m json.tool .release-please-manifest.json > /dev/null
+
   validate-title:
     name: Conventional Commit title
     if: github.event_name == 'pull_request'
