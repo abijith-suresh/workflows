@@ -1,6 +1,18 @@
 name: Release Please
 
+# Reusable release automation. Callers keep only release-please-config.json
+# (single package, no-v tags, see this repository's config for the standard)
+# and .release-please-manifest.json at their root, plus a fine-grained
+# RELEASE_PLEASE_TOKEN secret (Contents/Issues/Pull requests: read and write).
+# Callers trigger on pushes to their default branch.
+# The caller job must grant contents, issues, and pull-requests write access;
+# this workflow never receives secrets via `secrets: inherit`.
 on:
+  workflow_call:
+    secrets:
+      RELEASE_PLEASE_TOKEN:
+        description: Fine-grained token used for release pull requests and tags
+        required: true
   push:
     branches:
       - main
