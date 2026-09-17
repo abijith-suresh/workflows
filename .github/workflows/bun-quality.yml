@@ -29,14 +29,23 @@ jobs:
             exit 1
           fi
 
-          bun_version="$(sed -n 's/^[[:space:]]*bun[[:space:]]*=[[:space:]]*//p' mise.toml | tr -d "\"'")"
+          bun_entry="$(awk '
+            /^[[:space:]]*\[/ { in_tools = ($0 ~ /^[[:space:]]*\[tools\][[:space:]]*$/) }
+            in_tools && /^[[:space:]]*bun[[:space:]]*=/ { count++; line = $0 }
+            END { if (count != 1) exit 1; print line }
+          ' mise.toml)" || {
+            echo 'Root mise.toml must declare the Bun version exactly once under [tools], for example bun = "1.4.1".' >&2
+            exit 1
+          }
+
+          bun_version="$(printf '%s\n' "$bun_entry" | sed -e 's/^[^=]*=[[:space:]]*//' -e 's/[[:space:]]*#.*$//' | tr -d "\"'")"
           if [[ -z "$bun_version" ]]; then
-            echo "Root mise.toml must declare a Bun version under [tools], for example bun = \"1.2.3\"." >&2
+            echo 'Root mise.toml must declare a Bun version under [tools], for example bun = "1.4.1".' >&2
             exit 1
           fi
 
           if [[ ! "$bun_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "Root mise.toml must declare exactly one Bun version as major.minor.patch (for example, 1.2.3); found '$bun_version'." >&2
+            echo "Root mise.toml must declare exactly one Bun version as major.minor.patch (for example, 1.4.1); found '$bun_version'." >&2
             exit 1
           fi
 
