@@ -98,7 +98,7 @@ Checks display as `<caller job> / <called job>`. Keep both halves stable:
 
 Pre-1.0 policy: fixes ship as patches, additions as minors, and breaking changes stay in the 0.x line via `!` (a new major only after 1.x is declared). Consume changes through the immutable commit of their release.
 
-Release Please opens one release PR (`CHANGELOG.md`, `VERSION`, manifest); merging it creates a no-`v` tag and GitHub Release. Title policy drives versions: `fix:` patch, `feat:` minor, `!` minor pre-1.0, `ci:`/`chore:` non-release maintenance. The current `v0.4.1` release is historical. Future releases use tags such as `0.4.2`.
+Release Please opens one release PR (`CHANGELOG.md`, `VERSION`, manifest); merging it creates a no-`v` tag and GitHub Release. Title policy drives versions: `fix:` patch, `feat:` minor, `!` minor pre-1.0, `ci:`/`chore:` non-release maintenance. The current `v0.4.1` release is historical. This breaking contract change will use a tag such as `0.5.0`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [AGENTS.md](AGENTS.md).
 
