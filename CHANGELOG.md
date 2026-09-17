@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/abijith-suresh/workflows/compare/v0.4.0...v0.4.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* **ci:** use mise as the only Bun version source ([#17](https://github.com/abijith-suresh/workflows/issues/17)) ([0ef06ee](https://github.com/abijith-suresh/workflows/commit/0ef06ee51921f5861dca1258485ea25b8eb14746))
+
 ## [0.4.0](https://github.com/abijith-suresh/workflows/compare/v0.3.0...v0.4.0) (2026-09-05)
 
 
