@@ -33,6 +33,7 @@ jobs:
       - name: Check out caller repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          repository: ${{ github.repository }}
           persist-credentials: false
 
       - name: Validate no-v release policy
@@ -44,6 +45,8 @@ jobs:
           from pathlib import Path
 
           config_path = Path("release-please-config.json")
+          if not config_path.is_file():
+              raise SystemExit("Missing root release-please-config.json")
           config = json.loads(config_path.read_text())
           packages = config.get("packages")
           if not isinstance(packages, dict) or not packages:
