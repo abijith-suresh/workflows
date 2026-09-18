@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.0](https://github.com/abijith-suresh/workflows/compare/v0.4.1...0.5.0) (2026-09-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ci:** reusable release-please with no-v tags ([#22](https://github.com/abijith-suresh/workflows/issues/22))
+* **ci:** read Node and npm versions from mise.toml ([#21](https://github.com/abijith-suresh/workflows/issues/21))
+
+### Features
+
+* **ci:** read Node and npm versions from mise.toml ([#21](https://github.com/abijith-suresh/workflows/issues/21)) ([0360a8a](https://github.com/abijith-suresh/workflows/commit/0360a8a437497c1589dcd12dea32f432cb6dc64c))
+* **ci:** reusable release-please with no-v tags ([#22](https://github.com/abijith-suresh/workflows/issues/22)) ([91910de](https://github.com/abijith-suresh/workflows/commit/91910de008d024aba8ef1b0035fbf5406ff085b2))
+
+
+### Bug Fixes
+
+* **ci:** harden mise.toml Bun version parsing ([#20](https://github.com/abijith-suresh/workflows/issues/20)) ([f9cb333](https://github.com/abijith-suresh/workflows/commit/f9cb333731cac5813cee2868a99e6715408f9bee))
+* **ci:** set persist-credentials false on checkouts ([#19](https://github.com/abijith-suresh/workflows/issues/19)) ([e363630](https://github.com/abijith-suresh/workflows/commit/e363630154f38452436c9506f22012dd680ea0da))
+
 ## [0.4.1](https://github.com/abijith-suresh/workflows/compare/v0.4.0...v0.4.1) (2026-09-17)
 
 
