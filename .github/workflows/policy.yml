@@ -20,6 +20,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Go
@@ -37,6 +38,64 @@ jobs:
         env:
           ACTIONLINT_BIN: ${{ runner.temp }}/actionlint/actionlint
         run: '"$ACTIONLINT_BIN"'
+
+      - name: Check changed content for whitespace errors
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          zero_sha=0000000000000000000000000000000000000000
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            base_sha="$PR_BASE_SHA"
+          else
+            base_sha="$PUSH_BEFORE_SHA"
+          fi
+
+          if [[ -z "$base_sha" || -z "$AFTER_SHA" ]]; then
+            echo "Missing comparison SHA." >&2
+            exit 1
+          fi
+
+          if [[ "$base_sha" == "$zero_sha" ]]; then
+            base_sha="$(git hash-object -t tree /dev/null)"
+          fi
+
+          git diff --check "$base_sha" "$AFTER_SHA" --
+
+      - name: Validate release metadata JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          config = json.loads(Path("release-please-config.json").read_text())
+          manifest = json.loads(Path(".release-please-manifest.json").read_text())
+          version = Path("VERSION").read_text().strip()
+
+          if manifest.get(".") != version:
+              raise SystemExit(".release-please-manifest.json must match VERSION")
+
+          packages = config.get("packages")
+          if not isinstance(packages, dict) or not packages:
+              raise SystemExit("release-please-config.json must define at least one package")
+
+          for package_path, package in packages.items():
+              if not isinstance(package, dict):
+                  raise SystemExit(f"Release Please package {package_path!r} must be an object")
+              for option in ("include-v-in-tag", "include-v-in-release-name"):
+                  value = package.get(option, config.get(option))
+                  if value is not False:
+                      raise SystemExit(
+                          f"Release Please option {option!r} must be false for {package_path!r}"
+                      )
+          PY
 
   validate-title:
     name: Conventional Commit title
