@@ -1,6 +1,14 @@
 name: Release Please
 
+# Reusable release automation. Callers keep only their release metadata and a
+# RELEASE_PLEASE_TOKEN secret. This workflow owns the release action, no-v tag
+# policy, permissions, and concurrency. Callers own the trigger and branch.
 on:
+  workflow_call:
+    secrets:
+      RELEASE_PLEASE_TOKEN:
+        description: Fine-grained token used for release pull requests and tags
+        required: true
   push:
     branches:
       - main
@@ -8,16 +16,53 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: release-please-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   release-please:
     name: Create or update release PR
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
       issues: write
       pull-requests: write
     steps:
+      - name: Check out caller repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: ${{ github.repository }}
+          persist-credentials: false
+
+      - name: Validate no-v release policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          config_path = Path("release-please-config.json")
+          if not config_path.is_file():
+              raise SystemExit("Missing root release-please-config.json")
+          config = json.loads(config_path.read_text())
+          packages = config.get("packages")
+          if not isinstance(packages, dict) or not packages:
+              raise SystemExit("release-please-config.json must define at least one package")
+
+          for package_path, package in packages.items():
+              if not isinstance(package, dict):
+                  raise SystemExit(f"Release Please package {package_path!r} must be an object")
+              for option in ("include-v-in-tag", "include-v-in-release-name"):
+                  value = package.get(option, config.get(option))
+                  if value is not False:
+                      raise SystemExit(
+                          f"Release Please option {option!r} must be false for {package_path!r}"
+                      )
+          PY
+
       - name: Run Release Please
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
