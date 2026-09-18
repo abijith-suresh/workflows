@@ -18,6 +18,8 @@ From the repository root:
 ```sh
 git diff --check
 actionlint
+python3 -m json.tool release-please-config.json > /dev/null
+python3 -m json.tool .release-please-manifest.json > /dev/null
 ```
 
 `actionlint` validates the workflow YAML under `.github/workflows/`. If it is
@@ -41,14 +43,14 @@ commit subject.
   review the upstream change before updating a pin.
 - Keep permissions at the narrowest useful scope. Do not add secrets to make a
   validation job convenient, and treat fork pull requests as untrusted.
-- The shared quality workflows are zero-input root contracts. npm callers need
-  root `.node-version`, `package-lock.json`, and `package.json` with an exact
-  `packageManager` value matching `npm@major.minor.patch`; Bun callers need a
-  root `mise.toml` that declares the Bun version exactly once under `[tools]`
-  as `bun = "major.minor.patch"`, root `bun.lock`, and root `package.json`.
-  Both need a root `verify` script. The workflows run only `npm run verify` or
-  `bun run verify` and must not accept arbitrary shell commands or
-  `working-directory` overrides.
+- Use the reusable Release Please workflow for releases. Keep
+  `include-v-in-tag` and `include-v-in-release-name` set to `false`. Preserve
+  historical `v` tags, keep the manifest at its current version, and let the
+  first migrated release create the next no-`v` tag. Do not delete or duplicate
+  tags.
+- The shared quality workflows are zero-input root contracts (see AGENTS.md and
+  the workflow files, which are the source of truth). Do not add
+  consumer-specific logic or weaken the shared contract.
 - If an exceptional project does not fit the root contract, add a root
   compatibility wrapper that exposes the required metadata and `verify` script,
   or retain package-specific workflow logic in that consumer. Projects such as
@@ -59,9 +61,9 @@ commit subject.
   its required root files and metadata documented. Check existing callers
   before renaming an input, changing a default, or changing required
   permissions.
-- Treat breaking interface changes as a new major version line. Keep compatible
-  additions and behavior fixes on the existing line, and include upgrade notes
-  when consumers must change their caller.
+- Treat breaking interface changes as a minor release before 1.x (title with
+  `!`). Keep compatible additions and behavior fixes on the existing line, and
+  include upgrade notes when consumers must change their caller.
 - If a change affects the repository's own validation, ensure the policy
   workflow still validates all workflow YAML and still exercises the local
   `conventional-commit-title.yml` workflow.

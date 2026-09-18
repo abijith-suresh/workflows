@@ -11,13 +11,15 @@ inspect.
 
 - Keep reusable interfaces under `.github/workflows/` and expose only the
   inputs that are part of a deliberate contract through `workflow_call`.
-- The shared quality workflows are intentionally zero-input root contracts:
-  npm callers provide root `.node-version`, `package-lock.json`, and
-  `package.json` with exact `packageManager: npm@major.minor.patch`; Bun
-  callers provide a root `mise.toml` declaring the Bun version exactly once
-  under `[tools]` as `bun = "major.minor.patch"`, root `bun.lock`, and root
-  `package.json`. Both provide a root `verify` script. They run only
-  `npm run verify` or `bun run verify` and must not accept arbitrary shell
+- The shared quality workflows are intentionally zero-input root contracts,
+  documented in their workflow files (the files are the source of truth):
+  Bun callers provide a root `mise.toml` with exactly one `bun` version under
+  `[tools]` (for example `bun = "1.4.1"`), a root `bun.lock`, and a root
+  `package.json`; npm callers provide a root
+  `mise.toml` with exactly one `node` and one `npm` version under `[tools]`
+  (for example `node = "24.20.0"`, `npm = "11.16.0"`) and a root
+  `package-lock.json` and `package.json`. Both provide a root `verify` script.
+  The workflows run only that script and must not accept arbitrary shell
   commands or directory overrides.
 - If a project is exceptional, add a root compatibility wrapper that exposes
   this contract or keep package-specific quality logic in the consumer. Projects
@@ -31,6 +33,10 @@ inspect.
   the behavior the repository actually owns.
 - Default to least privilege. A called workflow cannot grant permissions that
   its caller did not grant, so document the minimum caller permissions.
+- The reusable Release Please workflow is the source of truth for release
+  execution. Release callers provide their package metadata and token, set both
+  `include-v-in-tag` and `include-v-in-release-name` to `false`, and trigger it
+  from their own default branch. The called workflow must not hardcode `main`.
 - Pin every third-party action to a full commit SHA and retain a version comment.
   Review pin updates as executable infrastructure, not as cosmetic dependency
   changes. Verify each SHA against its official upstream release tag.
@@ -58,9 +64,10 @@ not a Bun consumer, so adding a Bun version pin here would not affect callers.
 
 After review, reusable interface changes may be published with a versioned tag
 or GitHub release. Consumers still pin the immutable commit SHA and keep the
-release/version in a comment. Use a new major version for breaking interface
-changes; document inputs, permissions, security effects, and upgrade notes in
-the same change.
+release/version in a comment. Before a stable 1.x line is declared, breaking
+interface changes stay in the 0.x line (minor release via `!`); use a new
+major version only after 1.x is declared. Document inputs, permissions,
+security effects, and upgrade notes in the same change.
 
 Keep README examples and contributor guidance concise and accurate. Prefer
 small examples and recorded tradeoffs over generic policy prose. Changes should
