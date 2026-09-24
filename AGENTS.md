@@ -35,8 +35,11 @@ inspect.
   its caller did not grant, so document the minimum caller permissions.
 - The reusable Release Please workflow is the source of truth for release
   execution. Release callers provide their package metadata and token, set both
-  `include-v-in-tag` and `include-v-in-release-name` to `false`, and trigger it
-  from their own default branch. The called workflow must not hardcode `main`.
+  `include-v-in-tag` and `include-v-in-release-name` to `false`, and own their
+  trigger and release branch filters. They may pass `target-branch` (usually
+  `${{ github.ref_name }}`); the reusable workflow defaults to the caller's
+  branch and must not hardcode `main`. The reusable workflow runs only for
+  branch `push` and `workflow_dispatch` events.
 - Pin every third-party action to a full commit SHA and retain a version comment.
   Review pin updates as executable infrastructure, not as cosmetic dependency
   changes. Verify each SHA against its official upstream release tag.
@@ -45,9 +48,19 @@ inspect.
 
 Treat workflow files, workflow inputs, and commands run by reusable workflows as
 executable code. For untrusted pull requests and forks, prefer `pull_request`
-over `pull_request_target`, use read-only permissions, and do not expose
-secrets. In particular, do not add `secrets: inherit` or privileged checkout
-patterns without a specific, reviewed need.
+over `pull_request_target`, use read-only `GITHUB_TOKEN` permissions, and do not
+expose secrets to ordinary pull-request CI. In particular, do not add
+`secrets: inherit` or privileged checkout patterns without a specific, reviewed
+need.
+
+- The reusable Dependabot auto-merge workflow is called from `pull_request` and
+  never checks out or executes pull-request code. Dependabot-triggered
+  `GITHUB_TOKEN`s are read-only, so callers pass a fine-grained token stored as
+  a Dependabot secret. Keep it scoped to the target repository with only the
+  write permissions required for pull-request auto-merge. The workflow checks
+  both the event actor and PR author, reads metadata with `GITHUB_TOKEN`, and
+  uses the fine-grained token only to request auto-merge. Never call it from
+  `pull_request_target` or expose that token to ordinary pull-request jobs.
 
 ## Validation
 

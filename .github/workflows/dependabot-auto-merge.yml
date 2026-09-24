@@ -1,0 +1,79 @@
+name: Dependabot auto-merge
+
+# Called from pull_request. Dependabot-triggered GITHUB_TOKENs are read-only,
+# so callers pass an explicitly scoped token stored as a Dependabot secret.
+on:
+  workflow_call:
+    inputs:
+      major-update-policy:
+        description: Whether eligible major updates may enable auto-merge
+        required: false
+        type: string
+        default: compatible-majors
+    secrets:
+      DEPENDABOT_AUTOMERGE_TOKEN:
+        description: Fine-grained token with write access to contents and pull requests
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: dependabot-auto-merge-${{ github.repository }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  dependabot-auto-merge:
+    name: Enable auto-merge for eligible update
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.base.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Validate major update policy
+        shell: bash
+        env:
+          MAJOR_UPDATE_POLICY: ${{ inputs.major-update-policy }}
+        run: |
+          set -euo pipefail
+          case "$MAJOR_UPDATE_POLICY" in
+            patch-minor|compatible-majors) ;;
+            *)
+              echo "Unsupported major-update-policy: $MAJOR_UPDATE_POLICY" >&2
+              echo "Use patch-minor or compatible-majors." >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
+        with:
+          github-token: ${{ github.token }}
+
+      - name: Enable auto-merge for patch and minor updates
+        if: >-
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        env:
+          GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
+
+      - name: Enable auto-merge for eligible major updates
+        if: >-
+          inputs.major-update-policy == 'compatible-majors' &&
+          steps.metadata.outputs.update-type == 'version-update:semver-major' &&
+          (steps.metadata.outputs.dependency-type == 'direct:development' ||
+          (steps.metadata.outputs.dependency-type == 'direct:production' &&
+          steps.metadata.outputs.compatibility-score >= 90))
+        env:
+          GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
