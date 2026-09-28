@@ -11,6 +11,7 @@ Not a general-purpose CI platform. Triggers, matrices, smoke tests, deployments,
 - [`dependency-review.yml`](.github/workflows/dependency-review.yml): review dependency diffs without installing or running project code.
 - [`conventional-commit-title.yml`](.github/workflows/conventional-commit-title.yml): check a PR title (types, 72 chars max, no trailing period; Dependabot exempt).
 - [`release-please.yml`](.github/workflows/release-please.yml): reusable release automation (also drives this repository's own releases).
+- [`vercel-preview-cleanup.yml`](.github/workflows/vercel-preview-cleanup.yml): remove matching Vercel previews after a pull request closes.
 - [`policy.yml`](.github/workflows/policy.yml): repository-local validation (`actionlint`, `git diff --check`, release-metadata JSON, plus the title check on PRs).
 
 The workflow files are the source of truth for their contracts. This README shows only how to call them.
@@ -79,9 +80,15 @@ jobs:
 
 Release callers keep `release-please-config.json` and `.release-please-manifest.json` at their root, plus a fine-grained `RELEASE_PLEASE_TOKEN` (Contents/Issues/Pull requests: read and write). Every Release Please package must set `include-v-in-tag: false` and `include-v-in-release-name: false`. The reusable workflow checks this policy before it runs Release Please. Tags have no `v` prefix. Existing `v` tags remain historical. Keep each manifest at its current version; Release Please uses that baseline and generates the next tag without `v`. Do not delete or duplicate tags. Never use `secrets: inherit`.
 
+### Closed pull request preview cleanup
+
+The caller owns the close trigger and passes `vercel_project`, `vercel_scope`, and its `VERCEL_TOKEN` secret as `vercel_token`. The token should be scoped to the Vercel project. The caller needs `pull-requests: read`; the called workflow reads pull request metadata and GitHub's open pull requests, and does not check out or run pull request code. It removes only deployments matching the caller repository and PR number after inspecting each deployment's target. If another open pull request shares the branch, it uses Vercel's safe removal mode to protect active aliases.
+
+This workflow is designed for a `pull_request_target` closed trigger because it needs the caller's Vercel token after a PR closes. Keep that caller limited to this reusable workflow, pass only the named Vercel token, and never check out or execute PR code. Pin the reusable workflow to a full commit SHA and update that pin during review.
+
 ## Permissions and security
 
-Grant only what the called workflow needs (`contents: read` for quality/dependency-review, `pull-requests: read` for title, writes only for release-please). Use `pull_request`, not `pull_request_target`; keep fork jobs read-only with no secrets. All third-party actions are pinned to full SHAs; review pin updates as executable changes.
+Grant only what the called workflow needs (`contents: read` for quality/dependency-review, `pull-requests: read` for title and preview cleanup, writes only for release-please). Prefer `pull_request` for untrusted code. The preview cleanup caller uses `pull_request_target` only to process close metadata, never checks out PR code, and passes only its named Vercel token. All third-party actions are pinned to full SHAs; review pin updates as executable changes.
 
 ## Check names & branch protection
 
