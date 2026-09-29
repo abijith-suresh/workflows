@@ -14,6 +14,7 @@ Application-specific triggers, matrices, smoke tests, deployments, publishing, a
 | [`dependency-review.yml`](.github/workflows/dependency-review.yml) | Public repository, or a private repository with the required GitHub security licensing. Default severity threshold is `high`. |
 | [`dependabot-auto-merge.yml`](.github/workflows/dependabot-auto-merge.yml) | Caller uses `pull_request`, maps a repo-scoped fine-grained token from Dependabot secrets, and selects one of two documented major-update policies. |
 | [`release-please.yml`](.github/workflows/release-please.yml) | Root Release Please config and manifest, both no-`v` options set to `false`, and a `RELEASE_PLEASE_TOKEN` secret. Caller owns release triggers and branch filters. |
+| [`vercel-preview-cleanup.yml`](.github/workflows/vercel-preview-cleanup.yml) | Closed pull request event, Vercel project and scope, and a named project-scoped token. Removes matching preview deployments across all result pages. |
 | [`policy.yml`](.github/workflows/policy.yml) | Local deterministic checks for this repository: actionlint, whitespace, release metadata, and PR title. |
 
 The workflow files are the source of truth. Quality workflows intentionally accept no commands or directory overrides. A project with a different layout can keep its quality workflow local or add a root compatibility wrapper.
@@ -148,9 +149,17 @@ jobs:
 
 Release callers keep `release-please-config.json` and `.release-please-manifest.json` at their root, plus a fine-grained `RELEASE_PLEASE_TOKEN` with Contents, Issues, and Pull requests write access. Every package sets `include-v-in-tag: false` and `include-v-in-release-name: false`, either directly or through the config root. The reusable workflow validates this policy before running Release Please. New shared releases use tags without `v`; preserve historical `v` tags and leave the manifest at its current version so the first migrated release creates the next version. Do not delete or duplicate tags. Never use `secrets: inherit`.
 
+### Closed pull request preview cleanup
+
+The caller owns the close trigger and passes `vercel_project`, `vercel_scope`, and its `VERCEL_TOKEN` secret as `vercel_token`. The token should be scoped to the Vercel project. The caller needs `pull-requests: read`; the called workflow reads pull request metadata and GitHub's open pull requests, and does not check out or run pull request code. It checks every page of deployments, removing only those matching the caller repository and PR number after inspecting each deployment's target. If another open pull request shares the branch, it uses Vercel's safe removal mode to protect active aliases.
+
+This workflow is designed for a `pull_request_target` closed trigger because it needs the caller's Vercel token after a PR closes. Keep that caller limited to this reusable workflow, pass only the named Vercel token, and never check out or execute PR code. Pin the reusable workflow to a full commit SHA and update that pin during review.
+
+Public callers should check their GitHub Actions event policy for `pull_request_target`. GitHub plans to enforce a default block on this event on November 2, 2026, unless an applicable policy explicitly allows it. See [GitHub's event policy guidance](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target).
+
 ## Permissions and security
 
-Set permissions on the caller job as well as the called workflow. A called workflow cannot increase the caller's token permissions. The quality and dependency-review workflows need `contents: read`; the title workflow needs `pull-requests: read`; release automation needs `contents: write`, `issues: write`, and `pull-requests: write`.
+Set permissions on the caller job as well as the called workflow. A called workflow cannot increase the caller's token permissions. The quality and dependency-review workflows need `contents: read`; the title and preview cleanup workflows need `pull-requests: read`; release automation needs `contents: write`, `issues: write`, and `pull-requests: write`. The preview cleanup caller uses `pull_request_target` only to process close metadata, never checks out PR code, and passes only its named Vercel token.
 
 Use `pull_request` for normal CI, keep fork jobs read-only, and do not expose secrets to jobs that check out or run pull-request code. Third-party actions are pinned to full SHAs and retain version comments. Review pin changes as executable infrastructure.
 
