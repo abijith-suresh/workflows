@@ -155,6 +155,8 @@ The caller owns the close trigger and passes `vercel_project`, `vercel_scope`, a
 
 This workflow is designed for a `pull_request_target` closed trigger because it needs the caller's Vercel token after a PR closes. Keep that caller limited to this reusable workflow, pass only the named Vercel token, and never check out or execute PR code. Pin the reusable workflow to a full commit SHA and update that pin during review.
 
+Public callers should check their GitHub Actions event policy for `pull_request_target`. GitHub plans to enforce a default block on this event on November 2, 2026, unless an applicable policy explicitly allows it. See [GitHub's event policy guidance](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target).
+
 ## Permissions and security
 
 Set permissions on the caller job as well as the called workflow. A called workflow cannot increase the caller's token permissions. The quality and dependency-review workflows need `contents: read`; the title and preview cleanup workflows need `pull-requests: read`; release automation needs `contents: write`, `issues: write`, and `pull-requests: write`. The preview cleanup caller uses `pull_request_target` only to process close metadata, never checks out PR code, and passes only its named Vercel token.
