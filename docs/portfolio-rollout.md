@@ -125,8 +125,9 @@ For each consumer PR:
   commit SHA with the release version in a comment.
 - If adopting Dependabot auto-merge, map that repository's existing fine-grained
   token from Dependabot secrets to `DEPENDABOT_AUTOMERGE_TOKEN`. Limit the token
-  to the repository and the required write permissions; do not expose it to
-  ordinary pull-request CI.
+  to the repository and the required write permissions. The metadata action
+  uses it for compatibility-score lookups; GitHub Actions updates stay manual.
+  Do not expose the token to ordinary pull-request CI.
 - Preserve historical release tags, keep the current manifest version, and
   check that the next Release Please tag has no `v` prefix.
 - Update branch protection to the new stable check names after the reusable

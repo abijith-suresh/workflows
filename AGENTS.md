@@ -58,9 +58,10 @@ need.
   `GITHUB_TOKEN`s are read-only, so callers pass a fine-grained token stored as
   a Dependabot secret. Keep it scoped to the target repository with only the
   write permissions required for pull-request auto-merge. The workflow checks
-  both the event actor and PR author, reads metadata with `GITHUB_TOKEN`, and
-  uses the fine-grained token only to request auto-merge. Never call it from
-  `pull_request_target` or expose that token to ordinary pull-request jobs.
+  both the event actor and PR author, uses the fine-grained token for the
+  compatibility-score lookup and auto-merge request, and leaves GitHub Actions
+  updates for manual review. Never call it from `pull_request_target` or expose
+  that token to ordinary pull-request jobs.
 
 ## Validation
 

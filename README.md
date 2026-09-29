@@ -85,7 +85,7 @@ Dependency Review is supported on public repositories and on private repositorie
 
 ### Dependabot auto-merge
 
-Call this only for `pull_request` events. Dependabot-triggered `GITHUB_TOKEN`s are read-only, so pass a fine-grained personal access token stored as a **Dependabot secret**. The token must be limited to the target repository and grant `Contents: write` and `Pull requests: write`. The called workflow uses the ordinary `GITHUB_TOKEN` only to read PR metadata; it uses the fine-grained token only when enabling auto-merge.
+Call this only for `pull_request` events. Dependabot-triggered `GITHUB_TOKEN`s are read-only, so pass a fine-grained personal access token stored as a **Dependabot secret**. The token must be limited to the target repository and grant `Contents: write` and `Pull requests: write`. With `compatible-majors`, the pinned metadata action uses this token to look up compatibility scores. With `patch-minor`, it uses the read-only `GITHUB_TOKEN`. The merge steps use the fine-grained token to request auto-merge. GitHub Actions dependency updates always require manual review.
 
 ```yaml
 name: Dependabot auto-merge
@@ -114,7 +114,7 @@ jobs:
       DEPENDABOT_AUTOMERGE_TOKEN: ${{ secrets.DEPENDABOT_TOKEN }}
 ```
 
-Replace `DEPENDABOT_TOKEN` with the name of the token already stored under the repository's Dependabot secrets. The called workflow checks that both the event actor and PR author are `dependabot[bot]`, fetches update metadata, and requests squash auto-merge only for eligible updates. It does not check out or execute pull-request code. `compatible-majors` allows major updates to direct development dependencies and direct production dependencies with a compatibility score of at least 90. `patch-minor` only enables patch and minor updates. Auto-merge must be allowed in repository settings; branch protection and required checks still gate the merge.
+Replace `DEPENDABOT_TOKEN` with the name of the token already stored under the repository's Dependabot secrets. The called workflow checks that both the event actor and PR author are `dependabot[bot]`, fetches update metadata, and requests squash auto-merge only for eligible updates. It does not check out or execute pull-request code. `compatible-majors` allows major updates to direct development dependencies and direct production dependencies with a known compatibility score of at least 90. `patch-minor` only enables patch and minor updates. Neither policy auto-merges GitHub Actions updates. Auto-merge must be allowed in repository settings; branch protection and required checks still gate the merge.
 
 ### Releases and release branches
 

@@ -2,6 +2,7 @@ name: Dependabot auto-merge
 
 # Called from pull_request. Dependabot-triggered GITHUB_TOKENs are read-only,
 # so callers pass an explicitly scoped token stored as a Dependabot secret.
+# The metadata action needs that token for compatibility-score lookups.
 on:
   workflow_call:
     inputs:
@@ -12,7 +13,7 @@ on:
         default: compatible-majors
     secrets:
       DEPENDABOT_AUTOMERGE_TOKEN:
-        description: Fine-grained token with write access to contents and pull requests
+        description: Fine-grained token for compatibility lookups and pull request auto-merge
         required: true
 
 permissions: {}
@@ -55,12 +56,14 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
         with:
-          github-token: ${{ github.token }}
+          compat-lookup: ${{ inputs.major-update-policy == 'compatible-majors' }}
+          github-token: ${{ inputs.major-update-policy == 'compatible-majors' && secrets.DEPENDABOT_AUTOMERGE_TOKEN || github.token }}
 
       - name: Enable auto-merge for patch and minor updates
         if: >-
-          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+          steps.metadata.outputs.package-ecosystem != 'github-actions' &&
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor')
         env:
           GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
@@ -69,6 +72,7 @@ jobs:
       - name: Enable auto-merge for eligible major updates
         if: >-
           inputs.major-update-policy == 'compatible-majors' &&
+          steps.metadata.outputs.package-ecosystem != 'github-actions' &&
           steps.metadata.outputs.update-type == 'version-update:semver-major' &&
           (steps.metadata.outputs.dependency-type == 'direct:development' ||
           (steps.metadata.outputs.dependency-type == 'direct:production' &&
