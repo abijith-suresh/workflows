@@ -48,6 +48,17 @@ commit subject.
   historical `v` tags, keep the manifest at its current version, and let the
   first migrated release create the next no-`v` tag. Do not delete or duplicate
   tags.
+- Keep release triggers and branch filters in each caller. Pass
+  `target-branch: ${{ github.ref_name }}` when a project releases from one or
+  more named branches. The reusable workflow runs only for branch pushes and
+  manual dispatches, and never hardcodes a branch name.
+- The reusable Dependabot auto-merge workflow is called from `pull_request`,
+  checks that both the event actor and PR author are Dependabot, and never
+  checks out pull-request code. Pass a repo-scoped fine-grained token from
+  Dependabot secrets because Dependabot-triggered `GITHUB_TOKEN`s are
+  read-only. The metadata action needs the token to look up compatibility
+  scores, and GitHub Actions updates remain manual. Do not grant that token to
+  ordinary pull-request CI.
 - The shared quality workflows are zero-input root contracts (see AGENTS.md and
   the workflow files, which are the source of truth). Do not add
   consumer-specific logic or weaken the shared contract.

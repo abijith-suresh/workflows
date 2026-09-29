@@ -1,28 +1,31 @@
 name: Release Please
 
-# Reusable release automation. Callers keep only their release metadata and a
-# RELEASE_PLEASE_TOKEN secret. This workflow owns the release action, no-v tag
-# policy, permissions, and concurrency. Callers own the trigger and branch.
+# Reusable release engine. Callers own their triggers, release branches, and
+# package metadata. This workflow owns the Release Please action and no-v tag
+# policy.
 on:
   workflow_call:
+    inputs:
+      target-branch:
+        description: Branch that receives the release pull request; defaults to the caller's ref
+        required: false
+        type: string
     secrets:
       RELEASE_PLEASE_TOKEN:
         description: Fine-grained token used for release pull requests and tags
         required: true
-  push:
-    branches:
-      - main
-  workflow_dispatch:
-
 permissions: {}
 
 concurrency:
-  group: release-please-${{ github.repository }}
+  group: release-please-${{ github.repository }}-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   release-please:
     name: Create or update release PR
+    if: >-
+      github.ref_type == 'branch' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -69,3 +72,4 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          target-branch: ${{ inputs.target-branch || github.ref_name }}
