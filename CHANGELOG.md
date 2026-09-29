@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/abijith-suresh/workflows/compare/0.5.0...0.6.0) (2026-09-29)
+
+
+### Features
+
+* **ci:** add release branches and shared Dependabot workflow ([#27](https://github.com/abijith-suresh/workflows/issues/27)) ([d7b0eb2](https://github.com/abijith-suresh/workflows/commit/d7b0eb28b32923b160fb2656e8d18cf60f85724d))
+* **ci:** add reusable Vercel preview cleanup workflow ([#28](https://github.com/abijith-suresh/workflows/issues/28)) ([cb55685](https://github.com/abijith-suresh/workflows/commit/cb5568503a77dd1d70d531e5d902d7865a897645))
+
 ## [0.5.0](https://github.com/abijith-suresh/workflows/compare/v0.4.1...0.5.0) (2026-09-18)
 
 
