@@ -72,15 +72,32 @@ jobs:
             fi
           fi
 
-          deployment_list="$(vercel ls "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" \
-            --token "$VERCEL_TOKEN" --json --limit 100 \
-            --meta "githubPrId=$PR_NUMBER" --no-color)"
-          mapfile -t deployment_urls < <(jq -r \
-            --arg owner "$repository_owner" \
-            --arg repo "$repository_name" \
-            --arg pr "$PR_NUMBER" \
-            '.deployments[]? | select(.meta.githubOrg == $owner and .meta.githubRepo == $repo and (.meta.githubPrId | tostring) == $pr and .target != "production") | .url' \
-            <<< "$deployment_list")
+          deployment_urls=()
+          next_page=""
+          while :; do
+            list_args=(ls "$VERCEL_PROJECT" --scope "$VERCEL_SCOPE" \
+              --token "$VERCEL_TOKEN" --json --limit 100 \
+              --meta "githubPrId=$PR_NUMBER" --no-color)
+            if [[ -n "$next_page" ]]; then
+              list_args+=(--next "$next_page")
+            fi
+            deployment_list="$(vercel "${list_args[@]}")"
+            if ! jq -e '.deployments | type == "array"' <<< "$deployment_list" >/dev/null; then
+              echo "::error::Vercel returned an invalid deployment list."
+              exit 1
+            fi
+            mapfile -t page_urls < <(jq -r \
+              --arg owner "$repository_owner" \
+              --arg repo "$repository_name" \
+              --arg pr "$PR_NUMBER" \
+              '.deployments[] | select(.meta.githubOrg == $owner and .meta.githubRepo == $repo and (.meta.githubPrId | tostring) == $pr and .target != "production") | .url' \
+              <<< "$deployment_list")
+            deployment_urls+=("${page_urls[@]}")
+            next_page="$(jq -r '.pagination.next // empty' <<< "$deployment_list")"
+            if [[ -z "$next_page" ]]; then
+              break
+            fi
+          done
 
           if (( ${#deployment_urls[@]} == 0 )); then
             echo "No Vercel deployments matched pull request #${PR_NUMBER}."
