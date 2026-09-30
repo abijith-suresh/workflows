@@ -28,8 +28,10 @@ inspect.
   (`build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`,
   `style`, `test`), limits the complete title to 72 characters, and rejects a
   subject ending in a period. Dependabot titles remain exempt.
-- Give each workflow and job a clear, unique name. Keep validation focused on
-  the behavior the repository actually owns.
+- Give each workflow a clear, unique display name and each job a clear name
+  within its workflow. For reusable calls, choose caller job IDs that produce
+  distinct, stable check names with the called job name. Keep validation focused
+  on the behavior the repository actually owns.
 - Default to least privilege. A called workflow cannot grant permissions that
   its caller did not grant, so document the minimum caller permissions.
 - The reusable Release Please workflow is the source of truth for release
