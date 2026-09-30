@@ -64,8 +64,7 @@ commit subject.
   consumer-specific logic or weaken the shared contract.
 - If an exceptional project does not fit the root contract, add a root
   compatibility wrapper that exposes the required metadata and `verify` script,
-  or retain package-specific workflow logic in that consumer. Projects such as
-  snapserve remain local until they provide that wrapper. Do not add
+  or retain package-specific workflow logic in that consumer. Do not add
   consumer-specific logic or weaken the shared contract.
 - For a reusable workflow interface, describe the input, default, permission,
   and security implications in the README. A zero-input interface still needs

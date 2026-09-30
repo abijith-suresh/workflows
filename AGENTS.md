@@ -22,8 +22,7 @@ inspect.
   The workflows run only that script and must not accept arbitrary shell
   commands or directory overrides.
 - If a project is exceptional, add a root compatibility wrapper that exposes
-  this contract or keep package-specific quality logic in the consumer. Projects
-  such as snapserve remain local until they provide that wrapper. Do not
+  this contract or keep package-specific quality logic in the consumer. Do not
   reintroduce generic `verify-command` or `working-directory` inputs.
 - The Conventional Commit title workflow accepts the central type list
   (`build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`,
