@@ -179,13 +179,13 @@ Checks display as `<caller job> / <called job>`. Keep both names stable when the
 
 Each shared quality workflow uses one job to install dependencies and run one root `verify` script. npm's setup uses the lockfile-keyed cache provided by `actions/setup-node`. Bun dependency installation currently uses its frozen lockfile without an additional package-store cache; measure CI duration before adding another cache layer.
 
-Use caller-level concurrency to cancel superseded pull-request runs. Keep slow, project-specific checks local and trigger them only for relevant paths when possible; the final `verify` script should still provide one stable required status. For example, Interleaf's QPDF/WASM and browser-fidelity checks remain project-owned.
+Use caller-level concurrency to cancel superseded pull-request runs. Keep slow, project-specific checks local and trigger them only for relevant paths when possible; the final `verify` script should still provide one stable required status.
 
-## Versioning and rollout
+## Versioning
 
-Pre-1.0, fixes ship as patches, compatible additions as minors, and breaking changes stay in the 0.x line via a `!` commit. Version 1.0 is reserved for the first stable shared contract, after the portfolio migration is complete and the root contracts and permissions have been exercised across the supported package managers.
+Pre-1.0, fixes ship as patches, compatible additions as minors, and breaking changes stay in the 0.x line via a `!` commit. Version 1.0 is reserved until the root contracts and permissions have been exercised across the supported package managers.
 
-See [the portfolio rollout plan](docs/portfolio-rollout.md) for the repository audit, adoption groups, release-tag migration, and proposed PR order. See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [AGENTS.md](AGENTS.md) for contributor and security rules.
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [AGENTS.md](AGENTS.md) for contributor and security rules.
 
 ## Design references
 
