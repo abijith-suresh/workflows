@@ -38,6 +38,12 @@ commit subject.
 
 ## Workflow changes
 
+- Use lowercase kebab-case filenames and give each workflow in this repository
+  a distinct display name. Keep job names clear and stable:
+  changing a caller or called job display name changes its reported check name.
+- Prefer kebab-case for new `workflow_call` inputs and uppercase names for new
+  named secrets. Existing input and secret names are part of the public
+  interface; do not rename them solely for style.
 - Pin every third-party action to its full commit SHA and keep the human-readable
   version as a comment. Verify the SHA against the official upstream tag and
   review the upstream change before updating a pin.
@@ -64,8 +70,7 @@ commit subject.
   consumer-specific logic or weaken the shared contract.
 - If an exceptional project does not fit the root contract, add a root
   compatibility wrapper that exposes the required metadata and `verify` script,
-  or retain package-specific workflow logic in that consumer. Do not add
-  consumer-specific logic or weaken the shared contract.
+  or retain package-specific workflow logic in that consumer.
 - For a reusable workflow interface, describe the input, default, permission,
   and security implications in the README. A zero-input interface still needs
   its required root files and metadata documented. Check existing callers
@@ -80,7 +85,7 @@ commit subject.
 
 See [AGENTS.md](AGENTS.md) for the repository conventions,
 [SECURITY.md](SECURITY.md) for reporting workflow security issues, and the
-[workflow README](README.md#calling-a-reusable-workflow) for the complete root
+[workflow README](README.md#quality-checks) for the complete root
 contract. The quality workflows read the caller's required root runtime files; this
 repository does not provide a central `mise.toml` or other runtime file that
 controls callers. It is not a Bun consumer, so do not add a Bun version pin here:
