@@ -230,6 +230,8 @@ A single-branch caller can omit `with: target-branch`. Give the token only the l
 
 Use a dedicated caller for the `pull_request_target` `closed` event. Pass the exact Vercel project and team scope. Create a Vercel access token scoped to the team that owns the project and map it to the required `vercel_token` secret. The token owner needs access to list, inspect, and remove that project's deployments. The called job reads pull request metadata and open pull requests, checks deployment metadata and target before removal, and does not check out or execute pull request code. If another open pull request shares the head branch, it uses safe removal to protect active aliases.
 
+The example's event filter limits cleanup to closed pull requests. The reusable job now also checks the PR action and state and keeps tokens out of the CLI installation step. Neither safeguard is in the 0.6.0 pin below; update the pin to a release containing this change before relying on them.
+
 ```yaml
 name: Vercel preview cleanup
 

@@ -21,24 +21,26 @@ permissions: {}
 jobs:
   cleanup:
     name: Remove previews for the closed pull request
+    if: github.event.action == 'closed' && github.event.pull_request.state == 'closed'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       pull-requests: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPOSITORY: ${{ github.repository }}
-      PR_NUMBER: ${{ github.event.pull_request.number }}
-      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-      PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || '' }}
-      VERCEL_PROJECT: ${{ inputs.vercel_project }}
-      VERCEL_SCOPE: ${{ inputs.vercel_scope }}
-      VERCEL_TOKEN: ${{ secrets.vercel_token }}
     steps:
       - name: Install Vercel CLI
         run: npm install --global vercel@59.23.2
 
       - name: Remove previews for this closed pull request
+        # Keep tokens out of the preceding npm install step.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || '' }}
+          VERCEL_PROJECT: ${{ inputs.vercel_project }}
+          VERCEL_SCOPE: ${{ inputs.vercel_scope }}
+          VERCEL_TOKEN: ${{ secrets.vercel_token }}
         shell: bash
         run: |
           set -euo pipefail
