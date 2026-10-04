@@ -1,8 +1,5 @@
 # Security
 
-Workflow changes can expose tokens or execute untrusted PR code. Review files in
-`.github/workflows/` as executable code.
-
 Report vulnerabilities through GitHub's private vulnerability reporting in this
 repository's Security tab. If unavailable, use the security contact listed by
 the repository or owner on GitHub. Do not report vulnerabilities in public

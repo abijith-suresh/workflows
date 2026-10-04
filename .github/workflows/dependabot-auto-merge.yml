@@ -1,8 +1,12 @@
 name: Dependabot auto-merge
 
-# Called from pull_request. Dependabot-triggered GITHUB_TOKENs are read-only,
-# so callers pass an explicitly scoped token stored as a Dependabot secret.
-# The metadata action needs that token for compatibility-score lookups.
+# Call from pull_request in a job restricted to the Dependabot actor and author.
+# Do not use pull_request_target or share this token with ordinary PR jobs.
+# Dependabot's GITHUB_TOKEN is read-only. Store a fine-grained token as a
+# Dependabot secret, limited to the caller repository with Contents: write and
+# Pull requests: write, for compatibility lookups and auto-merge requests.
+# Enable auto-merge in repository settings; branch protection still applies.
+# GitHub Actions updates stay manual because action pins execute code in CI.
 on:
   workflow_call:
     inputs:

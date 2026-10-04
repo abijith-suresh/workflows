@@ -1,5 +1,7 @@
 name: Conventional Commit title
 
+# Call from pull_request and include the edited activity type so a title change
+# reruns validation. Title rules are defined in the check below.
 on:
   workflow_call:
 

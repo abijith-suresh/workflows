@@ -1,81 +1,58 @@
-# AGENTS.md
+# Working with these workflows
 
-## Purpose
+Use the appropriate path below, whether you are changing this repository or
+adopting a workflow elsewhere. Follow the target repository's own instructions
+as well.
 
-This repository contains reusable GitHub Actions workflows for Abijith Suresh's
-repositories. Explain workflow choices in comments and examples so readers can
-learn from them.
+## Adopting a workflow
 
-## Workflow conventions
+1. Inspect the caller's existing workflows, runtime files, scripts, and branch
+   rules. Decide which shared job it needs and which project-specific jobs it
+   should keep.
+2. Find the relevant file in [.github/workflows/](.github/workflows/) and confirm
+   it exposes `workflow_call`. Choose a release or reviewed revision, resolve it
+   to a full commit SHA, and read the workflow at that SHA. Current branch
+   documentation may describe changes absent from the selected release.
+3. Read its caller prerequisites, input and secret declarations, job conditions,
+   permissions, and commands. Prepare the caller's required files and service
+   settings. For an incompatible project layout, add a root wrapper or keep the
+   job local.
+4. Call it from a job's `uses:` field. Pin the full SHA with a version comment
+   and set needed inputs under `with:`. The caller owns events, activity types,
+   and branch filters. Grant the called jobs' required permissions and pass
+   secrets by their declared names, without `secrets: inherit`. Restrict named
+   tokens separately; job permissions only govern `GITHUB_TOKEN`. Keep ordinary
+   PR CI read-only and free of secrets.
+5. Run the caller's checks and lint its workflows. Exercise the intended event
+   in GitHub Actions and confirm the observed check names before changing branch
+   protection. Keep caller and called job names stable afterward.
+6. For upgrades, compare the pinned and proposed workflow definitions and read
+   the intervening release notes. Review executable changes, update caller
+   configuration as needed, and repeat validation.
 
-- Keep reusable workflows under `.github/workflows/`. Expose only inputs that
-  callers need through `workflow_call`.
-- Quality workflows accept no inputs and run only the root `verify` script in
-  the caller's `package.json`. Their workflow comments define required files.
-  Do not accept arbitrary shell commands or directory overrides.
-  Bun callers need root `bun.lock`, `package.json`, and `mise.toml` files, with
-  exactly one `bun` version under `[tools]`, such as `bun = "1.4.1"`.
-  npm callers need root `package-lock.json`, `package.json`, and `mise.toml`
-  files, with exactly one `node` and one `npm` version under `[tools]`, such as
-  `node = "24.20.0"` and `npm = "11.16.0"`.
-- For other project layouts, add a root wrapper with the required files and
-  script, or keep package-specific quality logic in the caller. Do not
-  reintroduce generic `verify-command` or `working-directory` inputs.
-- The Conventional Commit title workflow accepts the central type list
-  (`build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`,
-  `style`, `test`), limits the complete title to 72 characters, and rejects a
-  subject ending in a period. Dependabot titles remain exempt.
-- Give workflows unique display names and jobs clear names. Choose caller job
-  IDs that produce distinct, stable check names with the called job name.
-  Validate behavior this repository controls.
-- Grant only required permissions and document the caller's minimum. A called
-  workflow cannot increase its caller's permissions.
-- Use the reusable Release Please workflow to run releases. Callers provide
-  package metadata and a token, set both
-  `include-v-in-tag` and `include-v-in-release-name` to `false`, and own their
-  trigger and release branch filters. They may pass `target-branch`, usually
-  `${{ github.ref_name }}`. The reusable workflow defaults to the caller's
-  branch and must not hardcode `main`. The reusable workflow runs only for
-  branch `push` and `workflow_dispatch` events.
-- Pin every third-party action to a full commit SHA and retain a version comment.
-  Review upstream changes before updating a pin and verify each SHA against its
-  official release tag.
+## Changing this repository
 
-## Pull request and fork safety
-
-Treat workflow files, inputs, and commands as executable code. For untrusted PRs
-and forks, prefer `pull_request` over `pull_request_target`, use read-only
-`GITHUB_TOKEN` permissions, and keep secrets out of ordinary PR CI. Add
-`secrets: inherit` or privileged checkout only for a specific, reviewed need.
-
-- The reusable Dependabot auto-merge workflow is called from `pull_request` and
-  never checks out or executes pull-request code. Dependabot-triggered
-  `GITHUB_TOKEN`s are read-only, so callers pass a fine-grained token stored as
-  a Dependabot secret. Keep it scoped to the target repository with only the
-  write permissions required for pull-request auto-merge. The workflow checks
-  both the event actor and PR author, uses the fine-grained token for the
-  compatibility-score lookup and auto-merge request, and leaves GitHub Actions
-  updates for manual review. Never call it from `pull_request_target` or expose
-  that token to ordinary pull-request jobs.
-
-## Validation
-
-Run `git diff --check` and `actionlint` from the root. Use actionlint v1.7.12 to
-match repository policy. Validate changed YAML and JSON, use the configured
-formatter if there is one, and inspect the parsed YAML and final diff. Keep
-repository policy deterministic and free of application-specific CI.
-
-Quality workflows read the checked-out caller's runtime files. A `mise.toml`
-here would not configure callers. This repository is not a Bun consumer and
-does not need a Bun pin.
-
-## Releases and documentation
-
-After review, interface changes can be published with a versioned tag or release.
-Consumers pin the commit SHA with a version comment. Before stable 1.x, breaking
-changes use a 0.x minor release with `!` in the title. Use a new major only after
-1.x. Document inputs, permissions, security effects, and upgrade notes with the
-change.
-
-Keep README examples and contributor guidance concise and accurate. Explain choices
-about reusable workflows, permissions, pins, and untrusted code.
+1. Read the affected workflow and its callers before editing. Keep reusable jobs
+   small and application-specific logic in consumers. Preserve public input,
+   secret, and check names unless the change includes a migration plan. Quality
+   workflows keep a root verification script; do not add arbitrary command or
+   directory inputs.
+2. Keep workflow-specific setup and tradeoffs beside the code. Inputs, defaults,
+   permissions, and validation rules belong in YAML. Comments should explain
+   requirements the YAML cannot express. Markdown covers purpose and process;
+   do not add parallel catalogs, permission tables, or copies of workflow rules.
+3. Review workflow edits as executable code, including dependency updates. Pin
+   third-party actions to full SHAs with version comments and verify each pin
+   against its official upstream release tag. Keep permissions minimal and
+   privileged jobs isolated from untrusted PR code.
+4. Follow [policy.yml](.github/workflows/policy.yml) for validation commands and
+   tool versions. Run `git diff --check` and `actionlint` from the root, validate
+   changed YAML and JSON, use any configured formatter, and inspect the parsed
+   YAML and final diff. Report checks you could not run. Repository CI should
+   stay deterministic and validate this repository's workflows.
+5. Use the title rules in
+   [conventional-commit-title.yml](.github/workflows/conventional-commit-title.yml).
+   Explain the resulting behavior, validation, and any caller migration in the
+   PR. Mark breaking changes with `!`; before stable 1.x they use a 0.x minor
+   release. Let [release.yml](.github/workflows/release.yml) and the root release
+   metadata manage versions, tags, and the changelog.
