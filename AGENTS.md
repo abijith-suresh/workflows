@@ -2,57 +2,51 @@
 
 ## Purpose
 
-This repository provides a small set of reusable GitHub Actions workflows for
-Abijith Suresh's repositories. It is also a transparent learning and reference
-project: examples should make the reasoning behind an Actions choice easy to
-inspect.
+This repository contains reusable GitHub Actions workflows for Abijith Suresh's
+repositories. Explain workflow choices in comments and examples so readers can
+learn from them.
 
 ## Workflow conventions
 
-- Keep reusable interfaces under `.github/workflows/` and expose only the
-  inputs that are part of a deliberate contract through `workflow_call`.
-- The shared quality workflows are intentionally zero-input root contracts,
-  documented in their workflow files (the files are the source of truth):
-  Bun callers provide a root `mise.toml` with exactly one `bun` version under
-  `[tools]` (for example `bun = "1.4.1"`), a root `bun.lock`, and a root
-  `package.json`; npm callers provide a root
-  `mise.toml` with exactly one `node` and one `npm` version under `[tools]`
-  (for example `node = "24.20.0"`, `npm = "11.16.0"`) and a root
-  `package-lock.json` and `package.json`. Both provide a root `verify` script.
-  The workflows run only that script and must not accept arbitrary shell
-  commands or directory overrides.
-- If a project is exceptional, add a root compatibility wrapper that exposes
-  this contract or keep package-specific quality logic in the consumer. Do not
+- Keep reusable workflows under `.github/workflows/`. Expose only inputs that
+  callers need through `workflow_call`.
+- Quality workflows accept no inputs and run only the root `verify` script in
+  the caller's `package.json`. Their workflow comments define required files.
+  Do not accept arbitrary shell commands or directory overrides.
+  Bun callers need root `bun.lock`, `package.json`, and `mise.toml` files, with
+  exactly one `bun` version under `[tools]`, such as `bun = "1.4.1"`.
+  npm callers need root `package-lock.json`, `package.json`, and `mise.toml`
+  files, with exactly one `node` and one `npm` version under `[tools]`, such as
+  `node = "24.20.0"` and `npm = "11.16.0"`.
+- For other project layouts, add a root wrapper with the required files and
+  script, or keep package-specific quality logic in the caller. Do not
   reintroduce generic `verify-command` or `working-directory` inputs.
 - The Conventional Commit title workflow accepts the central type list
   (`build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`,
   `style`, `test`), limits the complete title to 72 characters, and rejects a
   subject ending in a period. Dependabot titles remain exempt.
-- Give each workflow a clear, unique display name and each job a clear name
-  within its workflow. For reusable calls, choose caller job IDs that produce
-  distinct, stable check names with the called job name. Keep validation focused
-  on the behavior the repository actually owns.
-- Default to least privilege. A called workflow cannot grant permissions that
-  its caller did not grant, so document the minimum caller permissions.
-- The reusable Release Please workflow is the source of truth for release
-  execution. Release callers provide their package metadata and token, set both
+- Give workflows unique display names and jobs clear names. Choose caller job
+  IDs that produce distinct, stable check names with the called job name.
+  Validate behavior this repository controls.
+- Grant only required permissions and document the caller's minimum. A called
+  workflow cannot increase its caller's permissions.
+- Use the reusable Release Please workflow to run releases. Callers provide
+  package metadata and a token, set both
   `include-v-in-tag` and `include-v-in-release-name` to `false`, and own their
-  trigger and release branch filters. They may pass `target-branch` (usually
-  `${{ github.ref_name }}`); the reusable workflow defaults to the caller's
+  trigger and release branch filters. They may pass `target-branch`, usually
+  `${{ github.ref_name }}`. The reusable workflow defaults to the caller's
   branch and must not hardcode `main`. The reusable workflow runs only for
   branch `push` and `workflow_dispatch` events.
 - Pin every third-party action to a full commit SHA and retain a version comment.
-  Review pin updates as executable infrastructure, not as cosmetic dependency
-  changes. Verify each SHA against its official upstream release tag.
+  Review upstream changes before updating a pin and verify each SHA against its
+  official release tag.
 
 ## Pull request and fork safety
 
-Treat workflow files, workflow inputs, and commands run by reusable workflows as
-executable code. For untrusted pull requests and forks, prefer `pull_request`
-over `pull_request_target`, use read-only `GITHUB_TOKEN` permissions, and do not
-expose secrets to ordinary pull-request CI. In particular, do not add
-`secrets: inherit` or privileged checkout patterns without a specific, reviewed
-need.
+Treat workflow files, inputs, and commands as executable code. For untrusted PRs
+and forks, prefer `pull_request` over `pull_request_target`, use read-only
+`GITHUB_TOKEN` permissions, and keep secrets out of ordinary PR CI. Add
+`secrets: inherit` or privileged checkout only for a specific, reviewed need.
 
 - The reusable Dependabot auto-merge workflow is called from `pull_request` and
   never checks out or executes pull-request code. Dependabot-triggered
@@ -66,25 +60,22 @@ need.
 
 ## Validation
 
-From the repository root, run `git diff --check` and `actionlint` (v1.7.12
-when matching repository policy). Validate changed YAML and JSON, format files
-when a formatter is configured, inspect the rendered YAML, and inspect the
-final diff as well. Keep the repository's policy workflow deterministic and
-free of application-specific CI. The quality workflows read runtime files
-from the checked-out caller; this repository does not provide a central
-`mise.toml` or other runtime file that controls callers. This repository is
-not a Bun consumer, so adding a Bun version pin here would not affect callers.
+Run `git diff --check` and `actionlint` from the root. Use actionlint v1.7.12 to
+match repository policy. Validate changed YAML and JSON, use the configured
+formatter if there is one, and inspect the parsed YAML and final diff. Keep
+repository policy deterministic and free of application-specific CI.
+
+Quality workflows read the checked-out caller's runtime files. A `mise.toml`
+here would not configure callers. This repository is not a Bun consumer and
+does not need a Bun pin.
 
 ## Releases and documentation
 
-After review, reusable interface changes may be published with a versioned tag
-or GitHub release. Consumers still pin the immutable commit SHA and keep the
-release/version in a comment. Before a stable 1.x line is declared, breaking
-interface changes stay in the 0.x line (minor release via `!`); use a new
-major version only after 1.x is declared. Document inputs, permissions,
-security effects, and upgrade notes in the same change.
+After review, interface changes can be published with a versioned tag or release.
+Consumers pin the commit SHA with a version comment. Before stable 1.x, breaking
+changes use a 0.x minor release with `!` in the title. Use a new major only after
+1.x. Document inputs, permissions, security effects, and upgrade notes with the
+change.
 
-Keep README examples and contributor guidance concise and accurate. Prefer
-small examples and recorded tradeoffs over generic policy prose. Changes should
-help a reader learn how reusable workflows, permissions, pinning, and untrusted
-code interact.
+Keep README examples and contributor guidance concise and accurate. Explain choices
+about reusable workflows, permissions, pins, and untrusted code.

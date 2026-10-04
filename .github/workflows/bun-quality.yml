@@ -1,5 +1,9 @@
 name: Bun quality
 
+# No inputs. Callers need root mise.toml with exactly one bun version under
+# [tools], pinned to major.minor.patch, plus bun.lock and package.json with a
+# verify script. Installs with a frozen lockfile and runs only bun run verify.
+# Minimum caller permissions: contents: read.
 on:
   workflow_call:
 

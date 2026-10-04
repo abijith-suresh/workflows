@@ -1,5 +1,9 @@
 name: npm quality
 
+# No inputs. Callers need root mise.toml with exactly one node and one npm
+# version under [tools], each pinned to major.minor.patch, plus package-lock.json
+# and package.json with a verify script. Runs npm ci, then only npm run verify.
+# Minimum caller permissions: contents: read.
 on:
   workflow_call:
 

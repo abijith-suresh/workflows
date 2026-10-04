@@ -1,10 +1,10 @@
 # workflows
 
-Reusable GitHub Actions workflows for [Abijith Suresh](https://github.com/abijith-suresh)'s repositories. Each workflow has a narrow caller contract; the consuming repository owns its triggers, project-specific checks, and deployment or publishing steps.
+Reusable GitHub Actions workflows for [Abijith Suresh](https://github.com/abijith-suresh)'s repositories. Callers choose the triggers and keep project-specific checks, deployment, and publishing in their own repositories.
 
 ## Workflow catalog
 
-These seven files expose `workflow_call` and can be called by other repositories:
+Call these workflows from a job's `uses:` field:
 
 | Workflow | Use it for | Caller configuration |
 | --- | --- | --- |
@@ -16,19 +16,13 @@ These seven files expose `workflow_call` and can be called by other repositories
 | [`release-please.yml`](.github/workflows/release-please.yml) | Create or update Release Please pull requests | Optional `target-branch`, root metadata, and a named token |
 | [`vercel-preview-cleanup.yml`](.github/workflows/vercel-preview-cleanup.yml) | Remove preview deployments when a pull request closes | Vercel project, scope, and a named token |
 
-[`policy.yml`](.github/workflows/policy.yml) and [`release.yml`](.github/workflows/release.yml) run only in this repository. They are examples of a local policy workflow and a local caller of the reusable release workflow; neither is a public `workflow_call` interface.
-
-The workflow files are the executable source of truth. This guide explains their caller contracts and shows examples pinned to a published release.
+[`policy.yml`](.github/workflows/policy.yml) validates this repository. [`release.yml`](.github/workflows/release.yml) calls the reusable release workflow for this repository. Neither accepts `workflow_call`.
 
 ## Names, pins, and permissions
 
-Workflow filenames use lowercase kebab-case. A caller invokes a reusable workflow in a job with `uses:`, not in a step. Use a stable caller job ID such as `bun-quality` or `pr-title`. The caller workflow's top-level `name:` labels the Actions run; the caller job and the called job determine the check name.
-
-For a reusable job, GitHub displays `<caller job display name> / <called job display name>`. If the caller sets a job `name:`, it replaces the caller job ID in that display. For example, this repository's policy caller sets `name: Conventional Commit title`, so its check is `Conventional Commit title / Validate title`. Confirm the observed check before adding it to branch protection, and keep both job names stable afterward.
-
 The examples below pin [release 0.6.0](https://github.com/abijith-suresh/workflows/releases/tag/0.6.0) to its full commit SHA, `163055ac24b4169ae93ae05c5d7491b1cd5d96c7`. Update the SHA when adopting a newer release and retain the release version in a comment. A tag or branch name alone is a mutable reference.
 
-Set the caller job's `permissions` explicitly. A reusable workflow cannot increase the permissions granted by its caller. Pass only the named secrets each workflow declares; do not use `secrets: inherit` for these examples. Input and secret identifiers are part of the callable interface, so copy their spelling exactly. The Vercel workflow currently uses underscores and a lowercase secret identifier.
+Set `permissions` on each caller job. A reusable workflow cannot increase them. Pass the declared secrets by name, without `secrets: inherit`. Copy input and secret names exactly, including the Vercel workflow's underscores and lowercase `vercel_token`.
 
 | Workflow | Minimum caller job `GITHUB_TOKEN` permissions | Named secret |
 | --- | --- | --- |
@@ -42,7 +36,7 @@ Set the caller job's `permissions` explicitly. A reusable workflow cannot increa
 
 ### Required check names
 
-With the example caller job IDs below and no caller job `name:`, the reusable checks appear as follows:
+GitHub displays `<caller job name> / <called job name>` for reusable checks. The caller name defaults to its job ID. The workflow's top-level `name:` labels the Actions run. With the examples below:
 
 | Caller job ID | Called job name | Check name |
 | --- | --- | --- |
@@ -51,11 +45,13 @@ With the example caller job IDs below and no caller job `name:`, the reusable ch
 | `pr-title` | `Validate title` | `pr-title / Validate title` |
 | `dependency-review` | `Review dependency changes` | `dependency-review / Review dependency changes` |
 
-Dependabot auto-merge requests a merge; it is not a required quality check. On pull requests, this repository's local policy workflow reports `Validate workflow YAML` and `Conventional Commit title / Validate title`.
+Confirm the check name before adding it to branch protection, then keep both job names stable. This repository's policy workflow reports `Validate workflow YAML` and `Conventional Commit title / Validate title`. Dependabot auto-merge requests a merge and should not be a required quality check.
 
 ## Quality checks
 
-Choose **one** package manager workflow. Both are zero-input root contracts: they install dependencies and run only the caller's root `verify` script. Package-specific checks can be called by that script. A different project layout can expose the root contract with a compatibility wrapper or keep its quality job local.
+Choose one package manager workflow. Neither accepts inputs. Both install dependencies and run the caller's root `verify` script. Put package-specific checks in that script. For other layouts, add a root wrapper with the required files or keep the quality job local.
+
+Runtime versions come from the caller's root `mise.toml`. These workflows do not read `packageManager`, `.bun-version`, or `.node-version`; keep any duplicate declarations in sync. Callers can use workflow-level concurrency to cancel superseded pull request runs.
 
 ### Bun
 
@@ -81,7 +77,7 @@ jobs:
       contents: read
 ```
 
-The called job runs `bun install --frozen-lockfile` and `bun run verify`.
+The called job runs `bun install --frozen-lockfile` and `bun run verify`. It adds no package-store cache.
 
 ### npm
 
@@ -108,7 +104,7 @@ jobs:
       contents: read
 ```
 
-The called job runs `npm ci` and `npm run verify`. Both quality workflows read runtime versions from the checked-out caller's root `mise.toml`, not from this repository, `packageManager`, `.bun-version`, or `.node-version`. Reconcile duplicate runtime declarations in the caller.
+The called job runs `npm ci` and `npm run verify`. `actions/setup-node` caches npm downloads with a key based on `package-lock.json`.
 
 ## Pull request checks
 
@@ -164,7 +160,7 @@ Call this workflow only from `pull_request`. It verifies both the event actor an
 | `patch-minor` | Patch and minor updates outside the GitHub Actions ecosystem |
 | `compatible-majors` (default) | The above, plus direct development dependency majors and direct production dependency majors with a known compatibility score of at least 90 |
 
-Store a fine-grained token as a **Dependabot secret** in the caller repository. Scope it to that repository with `Contents: write` and `Pull requests: write`. Dependabot-triggered `GITHUB_TOKEN` permissions are read-only; the named token requests auto-merge and, under `compatible-majors`, looks up compatibility scores. Enable auto-merge in repository settings; required checks and branch protection still gate merging.
+Store a fine-grained token as a Dependabot secret in the caller repository. Limit it to that repository with `Contents: write` and `Pull requests: write`. Dependabot's `GITHUB_TOKEN` is read-only, so the named token requests auto-merge and looks up compatibility scores under `compatible-majors`. Enable auto-merge in repository settings. Required checks and branch protection still apply.
 
 ```yaml
 name: Dependabot updates
@@ -190,13 +186,13 @@ jobs:
       DEPENDABOT_AUTOMERGE_TOKEN: ${{ secrets.DEPENDABOT_TOKEN }}
 ```
 
-Change `major-update-policy` to `compatible-majors` to use that policy. Replace `DEPENDABOT_TOKEN` with the caller's Dependabot secret name.
+Replace `DEPENDABOT_TOKEN` with the caller's Dependabot secret name. Omit `major-update-policy` to use the default `compatible-majors` policy.
 
 ## Release Please
 
-The caller owns its push and manual triggers, release branch filters, root `release-please-config.json` and `.release-please-manifest.json`, and a fine-grained `RELEASE_PLEASE_TOKEN`. Every package must set `include-v-in-tag` and `include-v-in-release-name` to `false`, directly or at the config root. The reusable workflow validates those settings and runs only for branch `push` and `workflow_dispatch` events. It never hardcodes `main`.
+Provide root `release-please-config.json` and `.release-please-manifest.json` files and a fine-grained `RELEASE_PLEASE_TOKEN`. Set `include-v-in-tag` and `include-v-in-release-name` to `false` for every package, or at the config root. The workflow validates these settings and runs only for branch `push` and `workflow_dispatch` events.
 
-The optional `target-branch` input defaults to the triggering branch. For more than one release branch, pass `${{ github.ref_name }}` and filter manual dispatches too:
+The caller chooses its triggers and release branches. `target-branch` defaults to the triggering branch. For multiple release branches, pass `${{ github.ref_name }}` and filter manual dispatches too:
 
 ```yaml
 name: Release automation
@@ -228,9 +224,11 @@ A single-branch caller can omit `with: target-branch`. Give the token only the l
 
 ## Vercel preview cleanup
 
-Use a dedicated caller for the `pull_request_target` `closed` event. Pass the exact Vercel project and team scope. Create a Vercel access token scoped to the team that owns the project and map it to the required `vercel_token` secret. The token owner needs access to list, inspect, and remove that project's deployments. The called job reads pull request metadata and open pull requests, checks deployment metadata and target before removal, and does not check out or execute pull request code. If another open pull request shares the head branch, it uses safe removal to protect active aliases.
+Use a dedicated caller for `pull_request_target` with `types: [closed]`. Pass the Vercel project and team slug. Map a token for that team to `vercel_token`; its owner needs permission to list, inspect, and remove the project's deployments.
 
-The example's event filter limits cleanup to closed pull requests. The reusable job now also checks the PR action and state and keeps tokens out of the CLI installation step. Neither safeguard is in the 0.6.0 pin below; update the pin to a release containing this change before relying on them.
+The job checks repository and PR metadata and the deployment target before removal. It never checks out or executes pull request code. If an open pull request shares the head branch, it uses `vercel rm --safe` to protect active aliases.
+
+The 0.6.0 pin below lacks two later safeguards: the job's closed-PR guard and isolation of tokens from CLI installation. Update the pin to a release containing those changes before relying on them. The example's event filter already limits calls to closed pull requests.
 
 ```yaml
 name: Vercel preview cleanup
@@ -256,8 +254,6 @@ jobs:
 Keep that privileged caller limited to this workflow and its named token. For public repositories, check the applicable Actions event policy: [GitHub plans to enforce its default block on `pull_request_target` on November 2, 2026](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target) unless a policy explicitly allows the event.
 
 ## Maintenance and releases
-
-The quality workflows use one stable root `verify` entry point. npm uses the lockfile-keyed `actions/setup-node` cache; Bun currently has no extra package-store cache. Callers can cancel superseded pull request runs with caller-level concurrency and keep application-specific smoke, browser, deployment, and publishing jobs local.
 
 Before 1.0, fixes ship as patches, compatible additions as minors, and breaking interface changes stay in the 0.x line via a `!` commit. Publish interface changes with a versioned release, then update consumer pins to the new immutable SHA and update required check names if they changed. See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [AGENTS.md](AGENTS.md) for repository guidance.
 

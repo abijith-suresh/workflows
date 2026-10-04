@@ -1,8 +1,7 @@
 name: Release Please
 
-# Reusable release engine. Callers own their triggers, release branches, and
-# package metadata. This workflow owns the Release Please action and no-v tag
-# policy.
+# Callers choose triggers and release branches and provide root release metadata.
+# This workflow runs Release Please and requires tags and release names without v.
 on:
   workflow_call:
     inputs:
