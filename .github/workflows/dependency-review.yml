@@ -11,8 +11,7 @@ on:
         type: string
         default: high
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   dependency-review:

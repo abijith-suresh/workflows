@@ -1,24 +1,34 @@
 # workflows
 
 Reusable GitHub Actions workflows for [Abijith Suresh](https://github.com/abijith-suresh)'s
-repositories. Shared jobs cover quality checks, pull request checks, release
-automation, Dependabot updates, and preview cleanup. Callers keep their triggers
-and application-specific build, deployment, and publishing logic.
+repositories. Callers keep their triggers and application-specific checks,
+deployment, and publishing logic.
 
-## Start here
+## Adopting a workflow
 
-Read [AGENTS.md](AGENTS.md) to adopt a workflow or change this repository. It is a
-process guide for people and agents working in either repository.
+1. Inspect the caller's existing CI and choose a shared job from
+   [.github/workflows/](.github/workflows/). Only files exposing `workflow_call`
+   are reusable.
+2. Choose a release or reviewed revision, resolve it to a full commit SHA, and
+   read the workflow at that SHA. Its declarations, commands, and caller
+   comments define what to configure; the current branch may differ.
+3. Prepare the required files and service settings. Call the workflow from a
+   job's `uses:` field with the full SHA and a version comment. Set needed inputs
+   under `with:` and keep event and branch filters in the caller. For other
+   project layouts, add a root wrapper or keep the job local.
+4. Grant the called jobs' required permissions and pass only declared secrets
+   by name. Scope named tokens separately; job permissions govern `GITHUB_TOKEN`.
+   Keep ordinary PR CI read-only and free of secrets.
+5. Run the caller's checks and lint its workflows. Exercise the intended Actions
+   event and confirm check names before updating branch protection. On upgrades,
+   review the workflow diff and release notes, then repeat validation.
 
-The [workflow files](.github/workflows/) define the interfaces and behavior.
-Their comments explain caller prerequisites that GitHub Actions cannot express
-in `workflow_call`. Read the file at the revision you plan to use.
+## Contributing
 
-[Releases](https://github.com/abijith-suresh/workflows/releases) and the generated
-[CHANGELOG.md](CHANGELOG.md) record published changes.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for changes to this repository and
+[SECURITY.md](SECURITY.md) to report vulnerabilities.
 
-Report vulnerabilities through [SECURITY.md](SECURITY.md).
+Published changes appear in [releases](https://github.com/abijith-suresh/workflows/releases)
+and the generated [changelog](CHANGELOG.md).
 
-## License
-
-[MIT](LICENSE).
+[MIT license](LICENSE).

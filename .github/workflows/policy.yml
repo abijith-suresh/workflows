@@ -11,8 +11,7 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   validate-workflows:
@@ -73,6 +72,7 @@ jobs:
           git diff --check "$base_sha" "$AFTER_SHA" --
 
       - name: Validate release metadata JSON
+        # Check before merge; the reusable release job checks each caller at runtime.
         shell: bash
         run: |
           set -euo pipefail

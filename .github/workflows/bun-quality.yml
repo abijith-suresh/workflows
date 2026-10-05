@@ -1,13 +1,11 @@
 name: Bun quality
 
-# Callers need root mise.toml with exactly one bun version under
-# [tools], pinned to major.minor.patch, plus bun.lock and package.json with a
-# verify script for the project's checks. Runtime pins belong in the caller.
+# Callers need root mise.toml with one bun version under [tools], pinned to
+# major.minor.patch, plus bun.lock and package.json with a verify script.
 on:
   workflow_call:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   quality:
@@ -20,7 +18,6 @@ jobs:
       - name: Check out caller repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          repository: ${{ github.repository }}
           persist-credentials: false
 
       - name: Validate root Bun version in mise.toml
@@ -28,7 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ ! -f mise.toml ]]; then
-            echo "Missing required root mise.toml; declare an exact Bun version under [tools], for example bun = \"1.2.3\"." >&2
+            echo 'Missing required root mise.toml.' >&2
             exit 1
           fi
 
@@ -37,18 +34,13 @@ jobs:
             in_tools && /^[[:space:]]*bun[[:space:]]*=/ { count++; line = $0 }
             END { if (count != 1) exit 1; print line }
           ' mise.toml)" || {
-            echo 'Root mise.toml must declare the Bun version exactly once under [tools], for example bun = "1.4.1".' >&2
+            echo 'Root mise.toml must declare bun exactly once under [tools].' >&2
             exit 1
           }
 
           bun_version="$(printf '%s\n' "$bun_entry" | sed -e 's/^[^=]*=[[:space:]]*//' -e 's/[[:space:]]*#.*$//' | tr -d "\"'")"
-          if [[ -z "$bun_version" ]]; then
-            echo 'Root mise.toml must declare a Bun version under [tools], for example bun = "1.4.1".' >&2
-            exit 1
-          fi
-
           if [[ ! "$bun_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "Root mise.toml must declare exactly one Bun version as major.minor.patch (for example, 1.4.1); found '$bun_version'." >&2
+            echo "Root mise.toml bun version must be major.minor.patch; found '$bun_version'." >&2
             exit 1
           fi
 
