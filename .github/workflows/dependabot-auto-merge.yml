@@ -1,8 +1,12 @@
 name: Dependabot auto-merge
 
-# Called from pull_request. Dependabot-triggered GITHUB_TOKENs are read-only,
-# so callers pass an explicitly scoped token stored as a Dependabot secret.
-# The metadata action needs that token for compatibility-score lookups.
+# Call from pull_request in a job restricted to the Dependabot actor and author.
+# Do not use pull_request_target or share this token with ordinary PR jobs.
+# Dependabot's GITHUB_TOKEN is read-only. Store a fine-grained token as a
+# Dependabot secret, limited to the caller repository with Contents: write and
+# Pull requests: write, for compatibility lookups and auto-merge requests.
+# Enable auto-merge in repository settings; branch protection still applies.
+# GitHub Actions updates stay manual because action pins execute code in CI.
 on:
   workflow_call:
     inputs:
@@ -59,24 +63,24 @@ jobs:
           compat-lookup: ${{ inputs.major-update-policy == 'compatible-majors' }}
           github-token: ${{ inputs.major-update-policy == 'compatible-majors' && secrets.DEPENDABOT_AUTOMERGE_TOKEN || github.token }}
 
-      - name: Enable auto-merge for patch and minor updates
+      - name: Enable auto-merge for eligible update
         if: >-
           steps.metadata.outputs.package-ecosystem != 'github-actions' &&
-          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
-          steps.metadata.outputs.update-type == 'version-update:semver-minor')
-        env:
-          GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --squash "$PR_URL"
-
-      - name: Enable auto-merge for eligible major updates
-        if: >-
-          inputs.major-update-policy == 'compatible-majors' &&
-          steps.metadata.outputs.package-ecosystem != 'github-actions' &&
-          steps.metadata.outputs.update-type == 'version-update:semver-major' &&
-          (steps.metadata.outputs.dependency-type == 'direct:development' ||
-          (steps.metadata.outputs.dependency-type == 'direct:production' &&
-          steps.metadata.outputs.compatibility-score >= 90))
+          (
+            steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+            steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+            (
+              inputs.major-update-policy == 'compatible-majors' &&
+              steps.metadata.outputs.update-type == 'version-update:semver-major' &&
+              (
+                steps.metadata.outputs.dependency-type == 'direct:development' ||
+                (
+                  steps.metadata.outputs.dependency-type == 'direct:production' &&
+                  steps.metadata.outputs.compatibility-score >= 90
+                )
+              )
+            )
+          )
         env:
           GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}

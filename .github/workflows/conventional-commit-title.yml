@@ -1,10 +1,11 @@
 name: Conventional Commit title
 
+# Call from pull_request and include the edited activity type so a title change
+# reruns validation.
 on:
   workflow_call:
 
-permissions:
-  pull-requests: read
+permissions: {}
 
 jobs:
   title:

@@ -1,8 +1,11 @@
 name: Release Please
 
-# Reusable release engine. Callers own their triggers, release branches, and
-# package metadata. This workflow owns the Release Please action and no-v tag
-# policy.
+# Callers provide root release-please-config.json and .release-please-manifest.json
+# files. Restrict the fine-grained token to the caller repository with the write
+# access listed in the job's permissions. Filter both pushes and manual runs to
+# the intended release branches; see release.yml for this repository's caller.
+# When migrating, preserve existing v tags and the current manifest version.
+# Let the next release create the next tag without v.
 on:
   workflow_call:
     inputs:
@@ -36,7 +39,6 @@ jobs:
       - name: Check out caller repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          repository: ${{ github.repository }}
           persist-credentials: false
 
       - name: Validate no-v release policy

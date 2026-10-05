@@ -1,5 +1,7 @@
 name: Dependency review
 
+# Call from pull_request. Requires a public repository or a private repository
+# with the GitHub security licensing needed for dependency review.
 on:
   workflow_call:
     inputs:
@@ -9,8 +11,7 @@ on:
         type: string
         default: high
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   dependency-review:

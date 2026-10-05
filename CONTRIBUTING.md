@@ -1,92 +1,25 @@
 # Contributing
 
-This repository is for small, reusable GitHub Actions workflows and clear
-learning material around them. A contribution should improve that shared
-infrastructure or its documentation.
-
-## Scope and non-goals
-
-In scope are reusable workflow behavior, workflow interfaces, validation, and
-examples. Application-specific build, deploy, release, publishing, and
-environment policy remain in consuming repositories. Do not add a package
-manager, broad application CI, or a security tool without a concrete need.
-
-## Before opening a pull request
-
-From the repository root:
-
-```sh
-git diff --check
-actionlint
-python3 -m json.tool release-please-config.json > /dev/null
-python3 -m json.tool .release-please-manifest.json > /dev/null
-```
-
-`actionlint` validates the workflow YAML under `.github/workflows/`. If it is
-not installed locally, inspect every changed workflow carefully and report that
-limitation in the pull request. Keep changes focused, and review the final
-diff rather than relying only on a formatter or generated output.
-
-Pull request titles use Conventional Commits. Use one of the supported types
-(`build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`,
-`style`, or `test`), followed by an optional scope and `: ` plus a description;
-for example, `ci: validate workflow YAML` or `docs(readme): clarify callers`.
-The complete title must be at most 72 characters, and its subject must not end
-with a period. Dependabot titles are exempt from this check. Changes are
-squash-merged after review, so the pull request title should also make a good
-commit subject.
-
-## Workflow changes
-
-- Use lowercase kebab-case filenames and give each workflow in this repository
-  a distinct display name. Keep job names clear and stable:
-  changing a caller or called job display name changes its reported check name.
-- Prefer kebab-case for new `workflow_call` inputs and uppercase names for new
-  named secrets. Existing input and secret names are part of the public
-  interface; do not rename them solely for style.
-- Pin every third-party action to its full commit SHA and keep the human-readable
-  version as a comment. Verify the SHA against the official upstream tag and
-  review the upstream change before updating a pin.
-- Keep permissions at the narrowest useful scope. Do not add secrets to make a
-  validation job convenient, and treat fork pull requests as untrusted.
-- Use the reusable Release Please workflow for releases. Keep
-  `include-v-in-tag` and `include-v-in-release-name` set to `false`. Preserve
-  historical `v` tags, keep the manifest at its current version, and let the
-  first migrated release create the next no-`v` tag. Do not delete or duplicate
-  tags.
-- Keep release triggers and branch filters in each caller. Pass
-  `target-branch: ${{ github.ref_name }}` when a project releases from one or
-  more named branches. The reusable workflow runs only for branch pushes and
-  manual dispatches, and never hardcodes a branch name.
-- The reusable Dependabot auto-merge workflow is called from `pull_request`,
-  checks that both the event actor and PR author are Dependabot, and never
-  checks out pull-request code. Pass a repo-scoped fine-grained token from
-  Dependabot secrets because Dependabot-triggered `GITHUB_TOKEN`s are
-  read-only. The metadata action needs the token to look up compatibility
-  scores, and GitHub Actions updates remain manual. Do not grant that token to
-  ordinary pull-request CI.
-- The shared quality workflows are zero-input root contracts (see AGENTS.md and
-  the workflow files, which are the source of truth). Do not add
-  consumer-specific logic or weaken the shared contract.
-- If an exceptional project does not fit the root contract, add a root
-  compatibility wrapper that exposes the required metadata and `verify` script,
-  or retain package-specific workflow logic in that consumer.
-- For a reusable workflow interface, describe the input, default, permission,
-  and security implications in the README. A zero-input interface still needs
-  its required root files and metadata documented. Check existing callers
-  before renaming an input, changing a default, or changing required
-  permissions.
-- Treat breaking interface changes as a minor release before 1.x (title with
-  `!`). Keep compatible additions and behavior fixes on the existing line, and
-  include upgrade notes when consumers must change their caller.
-- If a change affects the repository's own validation, ensure the policy
-  workflow still validates all workflow YAML and still exercises the local
-  `conventional-commit-title.yml` workflow.
-
-See [AGENTS.md](AGENTS.md) for the repository conventions,
-[SECURITY.md](SECURITY.md) for reporting workflow security issues, and the
-[workflow README](README.md#quality-checks) for the complete root
-contract. The quality workflows read the caller's required root runtime files; this
-repository does not provide a central `mise.toml` or other runtime file that
-controls callers. It is not a Bun consumer, so do not add a Bun version pin here:
-a file in this repository would not affect consuming repositories.
+1. Read the affected workflow and its callers. Keep reusable jobs small and
+   project-specific logic in consumers. Preserve public input, secret, and check
+   names unless the change includes a migration plan. Quality workflows keep a
+   root verification script; do not add arbitrary command or directory inputs.
+2. Put interfaces and executable rules in YAML. Use comments for caller setup
+   or tradeoffs the code cannot explain. Markdown covers purpose and process,
+   without parallel catalogs or copies of workflow rules. Called workflows
+   check out the caller, so helper scripts in this repository are unavailable
+   to their jobs.
+3. Review workflows and dependency updates as executable code. Pin third-party
+   actions to full SHAs with version comments and verify them against official
+   upstream release tags. Grant permissions per job, pass only named secrets,
+   and isolate privileged jobs from untrusted PR code.
+4. Follow [policy.yml](.github/workflows/policy.yml) for validation commands and
+   tool versions. Run `git diff --check` and `actionlint` from the root. Validate
+   changed YAML and JSON, use any configured formatter, and inspect the parsed
+   YAML and final diff. Keep policy CI focused on this repository's workflows.
+5. Use the rules in
+   [conventional-commit-title.yml](.github/workflows/conventional-commit-title.yml)
+   for the PR title. Explain behavior changes, validation, checks you could not
+   run, and caller migration steps. Before stable 1.x, breaking changes use `!`
+   and a 0.x minor release. Let [release.yml](.github/workflows/release.yml) and
+   release metadata manage versions, tags, and the changelog.

@@ -1,5 +1,10 @@
 name: Clean up Vercel preview deployments
 
+# Use a dedicated pull_request_target caller with types: [closed]. Keep it limited
+# to this job and never check out or execute PR code in that privileged caller.
+# Use a token scoped to the project's team with access to list, inspect, and
+# remove deployments. Confirm the repository's Actions policy allows this event:
+# https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target
 on:
   workflow_call:
     inputs:
