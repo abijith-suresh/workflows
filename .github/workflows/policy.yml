@@ -43,6 +43,14 @@ jobs:
           ACTIONLINT_BIN: ${{ runner.temp }}/actionlint/actionlint
         run: '"$ACTIONLINT_BIN"'
 
+      - name: Validate browser workflow behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/browser-workflow-tests"
+          "$RUNNER_TEMP/browser-workflow-tests/bin/pip" install --disable-pip-version-check PyYAML==6.0.3
+          "$RUNNER_TEMP/browser-workflow-tests/bin/python" .github/tests/test_browser_workflow.py
+
       - name: Check changed content for whitespace errors
         env:
           EVENT_NAME: ${{ github.event_name }}

@@ -23,6 +23,10 @@ deployment, and publishing logic.
    event and confirm check names before updating branch protection. On upgrades,
    review the workflow diff and release notes, then repeat validation.
 
+For browser CI, see the [abijith.sh migration guide](docs/browser-tests-adoption.md).
+It covers adopting the shared job while keeping the existing browser checks
+running and handling required-check names.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for changes to this repository and

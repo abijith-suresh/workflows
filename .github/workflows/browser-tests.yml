@@ -1,0 +1,162 @@
+name: Browser tests
+
+# Callers need root mise.toml and lockfile as in bun-quality.yml or
+# npm-quality.yml, plus package.json with a test:browser script and a local
+# Playwright dependency. Bun callers can also pin node in mise.toml.
+# test:browser owns builds; Playwright config owns projects and the web server.
+# Keep configured projects consistent with the installed browsers. To collect
+# diagnostics, write traces/screenshots to test-results/ and HTML reports to
+# playwright-report/. The caller must enable these in its Playwright config.
+on:
+  workflow_call:
+    inputs:
+      package-manager:
+        description: 'Root package manager: bun or npm.'
+        type: string
+        default: bun
+      browsers:
+        description: 'Space-separated browsers to install: chromium, firefox, webkit. Does not filter test projects.'
+        type: string
+        default: chromium firefox webkit
+      artifact-name:
+        description: 'Failure artifact name; use a unique name for each call in a run.'
+        type: string
+        default: playwright-results
+
+permissions: {}
+
+jobs:
+  browser-tests:
+    name: Browser regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      PACKAGE_MANAGER: ${{ inputs.package-manager }}
+      BROWSERS: ${{ inputs.browsers }}
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Validate browser inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            bun|npm) ;;
+            *) echo 'package-manager must be bun or npm.' >&2; exit 1 ;;
+          esac
+
+          # Accept spaces, tabs and newlines without glob expansion or eval.
+          read -r -a browsers <<< "${BROWSERS//$'\n'/ }"
+          if (( ${#browsers[@]} == 0 )); then
+            echo 'browsers must include at least one browser.' >&2
+            exit 1
+          fi
+          for browser in "${browsers[@]}"; do
+            case "$browser" in
+              chromium|firefox|webkit) ;;
+              *) echo "Unsupported browser: $browser" >&2; exit 1 ;;
+            esac
+          done
+
+      - name: Validate root versions in mise.toml
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f mise.toml ]]; then
+            echo 'Missing required root mise.toml.' >&2
+            exit 1
+          fi
+
+          tools=(node npm)
+          if [[ "$PACKAGE_MANAGER" == bun ]]; then
+            tools=(bun)
+            if awk '
+              /^[[:space:]]*\[/ { in_tools = ($0 ~ /^[[:space:]]*\[tools\][[:space:]]*$/) }
+              in_tools && /^[[:space:]]*node[[:space:]]*=/ { found = 1 }
+              END { exit !found }
+            ' mise.toml; then
+              tools+=(node)
+            fi
+          fi
+          for tool in "${tools[@]}"; do
+            entry="$(awk -v tool="$tool" '
+              /^[[:space:]]*\[/ { in_tools = ($0 ~ /^[[:space:]]*\[tools\][[:space:]]*$/) }
+              in_tools && $0 ~ "^[[:space:]]*" tool "[[:space:]]*=" { count++; line = $0 }
+              END { if (count != 1) exit 1; print line }
+            ' mise.toml)" || {
+              echo "Root mise.toml must declare $tool exactly once under [tools]." >&2
+              exit 1
+            }
+
+            version="$(printf '%s\n' "$entry" | sed -e 's/^[^=]*=[[:space:]]*//' -e 's/[[:space:]]*#.*$//' | tr -d "\"'")"
+            if [[ ! "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+              echo "Root mise.toml $tool version must be major.minor.patch; found '$version'." >&2
+              exit 1
+            fi
+            echo "${tool}_version=$version" >> "$GITHUB_ENV"
+          done
+
+      - name: Set up Node.js from root mise.toml
+        if: env.node_version != ''
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.node_version }}
+
+      - name: Set up Bun from root mise.toml
+        if: inputs.package-manager == 'bun'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.bun_version }}
+
+      - name: Install exact npm version
+        if: inputs.package-manager == 'npm'
+        shell: bash
+        env:
+          NPM_VERSION: ${{ env.npm_version }}
+        run: npm install --global "npm@${NPM_VERSION}"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            bun) bun install --frozen-lockfile ;;
+            npm) npm ci ;;
+          esac
+
+      - name: Install browsers and system dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -x node_modules/.bin/playwright ]]; then
+            echo 'Declare Playwright in the root package.json and lockfile.' >&2
+            exit 1
+          fi
+          read -r -a browsers <<< "${BROWSERS//$'\n'/ }"
+          # Use the locked local CLI; package runners can download a missing CLI.
+          node_modules/.bin/playwright install --with-deps "${browsers[@]}"
+
+      - name: Check browser behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$PACKAGE_MANAGER" in
+            bun) bun run test:browser ;;
+            npm) npm run test:browser ;;
+          esac
+
+      - name: Upload browser failure artifacts
+        if: failure() && !cancelled()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
