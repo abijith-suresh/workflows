@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/abijith-suresh/workflows/compare/0.6.0...0.7.0) (2026-10-08)
+
+
+### Features
+
+* **ci:** add strict Astro CI pipeline ([#38](https://github.com/abijith-suresh/workflows/issues/38)) ([a6976e4](https://github.com/abijith-suresh/workflows/commit/a6976e4370eb048119c7196bd95be57838788dee))
+
+
+### Bug Fixes
+
+* **ci:** guard Vercel cleanup and scope tokens ([#34](https://github.com/abijith-suresh/workflows/issues/34)) ([0424bd4](https://github.com/abijith-suresh/workflows/commit/0424bd486ad1c3e0bbb4d206886dec114872eb68))
+* **ci:** recheck edited titles and distinguish release caller ([#31](https://github.com/abijith-suresh/workflows/issues/31)) ([9aebd56](https://github.com/abijith-suresh/workflows/commit/9aebd5663824c322d973105bcb0dcf303cc2a15c))
+
 ## [0.6.0](https://github.com/abijith-suresh/workflows/compare/0.5.0...0.6.0) (2026-09-29)
 
 
