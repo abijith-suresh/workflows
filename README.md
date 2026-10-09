@@ -86,21 +86,22 @@ changing required checks.
 
 ### Standard caller set
 
-Projects in the standard setup call these workflows from separate files, all
-pinned to the same revision and with these job names so check names read the
-same everywhere:
+Projects in the standard setup use the same caller files and job names, all
+pinned to the same revision:
 
-| Caller job | Workflow | Extra setup |
+| Caller file | Jobs | Extra setup |
 |---|---|---|
-| `ci` | [ci.yml](.github/workflows/ci.yml) | root `mise.toml`, `bun.lock`, package scripts |
-| `pr-title` | [conventional-commit-title.yml](.github/workflows/conventional-commit-title.yml) | none |
-| `dependency-review` | [dependency-review.yml](.github/workflows/dependency-review.yml) | public repository or dependency review licensing |
-| `dependabot` | [dependabot-auto-merge.yml](.github/workflows/dependabot-auto-merge.yml) | Dependabot config and auto-merge enabled; call from `pull_request_target` with `contents: write` and `pull-requests: write` |
-| `release-please` | [release-please.yml](.github/workflows/release-please.yml) | root release-please config and manifest, `RELEASE_PLEASE_TOKEN` secret |
-| `gate` | caller-side job | `needs` the `ci` call and any repository-local jobs |
+| `ci.yml` | `ci`, `dependency-review`, `gate` | root `mise.toml`, `bun.lock`, package scripts; dependency review needs a public repository or the licensing for it |
+| `pr-title.yml` | `pr-title` | none |
+| `dependabot-auto-merge.yml` | `dependabot` | Dependabot config and auto-merge enabled; call from `pull_request_target` with `contents: write` and `pull-requests: write` |
+| `release-please.yml` | `release-please` | root release-please config and manifest, `RELEASE_PLEASE_TOKEN` secret |
+| `vercel-preview-cleanup.yml` | `cleanup` | Vercel project link; call from `pull_request_target` with `types: [closed]` |
 
-Keep one caller file per workflow and no inline copies of the jobs above; the
-shared workflow is the only implementation.
+`gate` is a caller-side job that needs the other jobs in `ci.yml` plus any
+repository-local jobs; require only `gate` in branch protection. Repository-local
+jobs (a qpdf smoke, for example) stay in `ci.yml` so the gate can cover them.
+Keep no inline copies of the shared jobs; the shared workflow is the only
+implementation.
 
 `ci.yml` replaces `bun-quality.yml` for Astro projects. `npm-quality.yml`
 continues for npm projects.
