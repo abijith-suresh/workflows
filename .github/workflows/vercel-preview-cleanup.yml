@@ -112,8 +112,12 @@ jobs:
           fi
 
           for deployment_url in "${deployment_urls[@]}"; do
+            # Capture only stdout: the CLI writes the JSON document there and
+            # progress lines to stderr. Merging the streams can interleave the
+            # progress line after the JSON and corrupt the parse, so keep the
+            # stderr output in the run log instead.
             inspect_output="$(vercel inspect "$deployment_url" --scope "$VERCEL_SCOPE" \
-              --token "$VERCEL_TOKEN" --format json --no-color 2>&1)" || {
+              --token "$VERCEL_TOKEN" --format json --no-color)" || {
               echo "::warning::Could not inspect $deployment_url; skipping it."
               continue
             }
