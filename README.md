@@ -84,6 +84,24 @@ pipeline fails and can also cover repository-local jobs; add those jobs to its
 `<caller job name> / <called job name>`; confirm them on a real run before
 changing required checks.
 
+### Standard caller set
+
+Projects in the standard setup call these workflows from separate files, all
+pinned to the same revision and with these job names so check names read the
+same everywhere:
+
+| Caller job | Workflow | Extra setup |
+|---|---|---|
+| `ci` | [ci.yml](.github/workflows/ci.yml) | root `mise.toml`, `bun.lock`, package scripts |
+| `pr-title` | [conventional-commit-title.yml](.github/workflows/conventional-commit-title.yml) | none |
+| `dependency-review` | [dependency-review.yml](.github/workflows/dependency-review.yml) | public repository or dependency review licensing |
+| `dependabot` | [dependabot-auto-merge.yml](.github/workflows/dependabot-auto-merge.yml) | Dependabot config and auto-merge enabled; call from `pull_request_target` with `contents: write` and `pull-requests: write` |
+| `release-please` | [release-please.yml](.github/workflows/release-please.yml) | root release-please config and manifest, `RELEASE_PLEASE_TOKEN` secret |
+| `gate` | caller-side job | `needs` the `ci` call and any repository-local jobs |
+
+Keep one caller file per workflow and no inline copies of the jobs above; the
+shared workflow is the only implementation.
+
 `ci.yml` replaces `bun-quality.yml` for Astro projects. `npm-quality.yml`
 continues for npm projects.
 

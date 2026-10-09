@@ -1,10 +1,9 @@
 name: Dependabot auto-merge
 
-# Call from pull_request in a job restricted to the Dependabot actor and author.
-# Do not use pull_request_target or share this token with ordinary PR jobs.
-# Dependabot's GITHUB_TOKEN is read-only. Store a fine-grained token as a
-# Dependabot secret, limited to the caller repository with Contents: write and
-# Pull requests: write, for compatibility lookups and auto-merge requests.
+# Call from pull_request_target with contents: write and pull-requests: write on
+# the calling job. The workflow only reads Dependabot metadata and requests
+# auto-merge; it never checks out or runs pull request code, so the base
+# repository token is safe here. No stored token is needed.
 # Enable auto-merge in repository settings; branch protection still applies.
 # GitHub Actions updates stay manual because action pins execute code in CI.
 on:
@@ -15,10 +14,6 @@ on:
         required: false
         type: string
         default: compatible-majors
-    secrets:
-      DEPENDABOT_AUTOMERGE_TOKEN:
-        description: Fine-grained token for compatibility lookups and pull request auto-merge
-        required: true
 
 permissions: {}
 
@@ -30,7 +25,7 @@ jobs:
   dependabot-auto-merge:
     name: Enable auto-merge for eligible update
     if: >-
-      github.event_name == 'pull_request' &&
+      github.event_name == 'pull_request_target' &&
       github.actor == 'dependabot[bot]' &&
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.event.pull_request.state == 'open' &&
@@ -38,8 +33,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
-      contents: read
-      pull-requests: read
+      contents: write
+      pull-requests: write
     steps:
       - name: Validate major update policy
         shell: bash
@@ -61,7 +56,7 @@ jobs:
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
         with:
           compat-lookup: ${{ inputs.major-update-policy == 'compatible-majors' }}
-          github-token: ${{ inputs.major-update-policy == 'compatible-majors' && secrets.DEPENDABOT_AUTOMERGE_TOKEN || github.token }}
+          github-token: ${{ github.token }}
 
       - name: Enable auto-merge for eligible update
         if: >-
@@ -82,6 +77,6 @@ jobs:
             )
           )
         env:
-          GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr merge --auto --squash "$PR_URL"
