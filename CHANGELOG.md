@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/abijith-suresh/workflows/compare/0.7.0...0.8.0) (2026-10-09)
+
+
+### Features
+
+* **ci:** run Dependabot auto-merge without a stored token ([#39](https://github.com/abijith-suresh/workflows/issues/39)) ([b324658](https://github.com/abijith-suresh/workflows/commit/b32465858c3527d222a7118fbbb1cbd5ccad4611))
+
 ## [0.7.0](https://github.com/abijith-suresh/workflows/compare/0.6.0...0.7.0) (2026-10-08)
 
 
