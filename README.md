@@ -33,11 +33,13 @@ or failing script fails the job.
 
 Callers need a root `mise.toml` with a `bun` pin, a `bun.lock` with Playwright,
 and `type-check`, `lint`, `format:check`, `test`, `build`, and `test:e2e`
-scripts in the root `package.json`. The `test:e2e` script builds the site and
-runs Playwright, which owns its preview server through the config. Chromium,
-Firefox, and WebKit install with their system dependencies; when the browser
-run fails, `test-results/` and `playwright-report/` upload as the
-`browser-test-results` artifact.
+scripts in the root `package.json`. The Build step runs before the browser
+suite, and `test:e2e` consumes that build: it runs Playwright, which owns its
+preview server through the config, without building again. For a clean local
+run, callers can add a `test:e2e:build` script that runs `bun run build &&
+bun run test:e2e`; CI does not call it. Chromium, Firefox, and WebKit install
+with their system dependencies; when the browser run fails, `test-results/`
+and `playwright-report/` upload as the `browser-test-results` artifact.
 
 ```yaml
 name: CI

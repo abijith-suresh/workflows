@@ -2,7 +2,9 @@ name: CI
 
 # Callers need a root mise.toml with a Bun pin, a bun.lock with Playwright, and
 # a package.json with type-check, lint, format:check, test, build, and test:e2e
-# scripts. Every step runs; a missing or failing script fails the job.
+# scripts. The Build step runs before the browser suite; test:e2e consumes that
+# build rather than building again. Every step runs; a missing or failing script
+# fails the job.
 on:
   workflow_call:
 
@@ -53,6 +55,7 @@ jobs:
         run: bunx playwright install --with-deps chromium firefox webkit
 
       - name: Run browser tests
+        # test:e2e consumes the build from the Build step.
         run: bun run test:e2e
 
       - name: Upload browser failure artifacts
