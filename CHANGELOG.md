@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/abijith-suresh/workflows/compare/0.8.0...0.8.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* **vercel-preview-cleanup:** parse inspect output without merged stderr ([#42](https://github.com/abijith-suresh/workflows/issues/42)) ([bf88c64](https://github.com/abijith-suresh/workflows/commit/bf88c64c1bb4933e94b723073c790dca0d9d2fa8))
+
 ## [0.8.0](https://github.com/abijith-suresh/workflows/compare/0.7.0...0.8.0) (2026-10-09)
 
 
