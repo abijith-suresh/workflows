@@ -13,13 +13,17 @@
    actions to full SHAs with version comments and verify them against official
    upstream release tags. Grant permissions per job, pass only named secrets,
    and isolate privileged jobs from untrusted PR code.
-4. Follow [policy.yml](.github/workflows/policy.yml) for validation commands and
-   tool versions. Run `git diff --check` and `actionlint` from the root. Validate
-   changed YAML and JSON, use any configured formatter, and inspect the parsed
-   YAML and final diff. Keep policy CI focused on this repository's workflows.
-5. Use the rules in
-   [conventional-commit-title.yml](.github/workflows/conventional-commit-title.yml)
-   for the PR title. Explain behavior changes, validation, checks you could not
-   run, and caller migration steps. Before stable 1.x, breaking changes use `!`
-   and a 0.x minor release. Let [release.yml](.github/workflows/release.yml) and
-   release metadata manage versions, tags, and the changelog.
+4. Run `git diff --check` and `actionlint` from the root before handoff, and
+   validate changed JSON. There is no `package.json` or unit-test suite — do not
+   invent a `verify` script. [policy.yml](.github/workflows/policy.yml) owns the
+   exact commands and tool versions, and policy CI is the final gate for
+   workflows in this repository.
+5. Use Conventional Commits for commits and the PR title, following
+   [conventional-commit-title.yml](.github/workflows/conventional-commit-title.yml).
+   Explain behavior changes, validation, checks you could not run, and caller
+   migration steps. Before stable 1.x, breaking changes use `!` and a 0.x minor
+   release.
+6. Never commit straight to main. Squash-merge once approved, and leave PRs open
+   for owner review rather than merging them yourself. [CHANGELOG.md](CHANGELOG.md),
+   `VERSION`, and release tags are written by release-please from Conventional
+   Commits — never hand-edit them.
