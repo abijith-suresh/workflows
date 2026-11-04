@@ -107,3 +107,22 @@ jobs:
     uses: ./.github/workflows/conventional-commit-title.yml
     permissions:
       pull-requests: read
+
+  gate-action:
+    name: Gate action
+    if: ${{ !cancelled() }}
+    needs: [validate-workflows]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run the gate action against this job's needs
+        uses: ./.github/actions/gate
+        with:
+          needs: ${{ toJSON(needs) }}
