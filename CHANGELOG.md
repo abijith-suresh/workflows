@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.9.0](https://github.com/abijith-suresh/workflows/compare/0.8.1...v0.9.0) (2026-11-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vercel-preview-cleanup:** use kebab-case inputs ([#51](https://github.com/abijith-suresh/workflows/issues/51))
+* **release-please:** standardize on v-prefixed release tags ([#50](https://github.com/abijith-suresh/workflows/issues/50))
+
+### Features
+
+* **gate:** add a composite action for the caller gate job ([#52](https://github.com/abijith-suresh/workflows/issues/52)) ([92305dc](https://github.com/abijith-suresh/workflows/commit/92305dc27087e9070db52791752ca27e81003f8f))
+* **release-please:** standardize on v-prefixed release tags ([#50](https://github.com/abijith-suresh/workflows/issues/50)) ([adb8a41](https://github.com/abijith-suresh/workflows/commit/adb8a41f4e42891de8d46c2dc91ae916d7786acc))
+* **templates:** add caller files and shared default configs ([#54](https://github.com/abijith-suresh/workflows/issues/54)) ([6a3488b](https://github.com/abijith-suresh/workflows/commit/6a3488b94ef4c7db889693de0f73a40e51642e48))
+* **vercel-preview-cleanup:** use kebab-case inputs ([#51](https://github.com/abijith-suresh/workflows/issues/51)) ([a3a3e43](https://github.com/abijith-suresh/workflows/commit/a3a3e435a0dfc1465be8c762d9178229f963a8dc))
+
+
+### Bug Fixes
+
+* **ci:** update checkout to v7.0.1 and mise-action to v5.2.6 ([#49](https://github.com/abijith-suresh/workflows/issues/49)) ([8d3ee4c](https://github.com/abijith-suresh/workflows/commit/8d3ee4c02b697d106b8a6fcda5882c9de127c7bf))
+
 ## [0.8.1](https://github.com/abijith-suresh/workflows/compare/0.8.0...0.8.1) (2026-10-09)
 
 
