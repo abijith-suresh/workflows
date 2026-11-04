@@ -4,8 +4,10 @@ name: Release Please
 # files. Restrict the fine-grained token to the caller repository with the write
 # access listed in the job's permissions. Filter both pushes and manual runs to
 # the intended release branches; see release.yml for this repository's caller.
-# When migrating, preserve existing v tags and the current manifest version.
-# Let the next release create the next tag without v.
+# Tags use the release-please default, v<version>: leave include-v-in-tag and
+# include-v-in-release-name unset. When migrating from unprefixed tags, keep the
+# existing tags and the current manifest version; the next release creates the
+# next v tag. Drop bootstrap-sha once a release exists.
 on:
   workflow_call:
     inputs:
@@ -41,7 +43,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Validate no-v release policy
+      - name: Validate release tag policy
         shell: bash
         run: |
           set -euo pipefail
@@ -61,11 +63,16 @@ jobs:
               if not isinstance(package, dict):
                   raise SystemExit(f"Release Please package {package_path!r} must be an object")
               for option in ("include-v-in-tag", "include-v-in-release-name"):
-                  value = package.get(option, config.get(option))
-                  if value is not False:
+                  if package.get(option, config.get(option)) is False:
                       raise SystemExit(
-                          f"Release Please option {option!r} must be false for {package_path!r}"
+                          f"Release Please option {option!r} must be unset for {package_path!r}; "
+                          "tags use the default v<version> form"
                       )
+              if "bootstrap-sha" in package or "bootstrap-sha" in config:
+                  print(
+                      "::warning file=release-please-config.json::"
+                      "bootstrap-sha only matters before the first release; remove it once one exists"
+                  )
           PY
 
       - name: Run Release Please

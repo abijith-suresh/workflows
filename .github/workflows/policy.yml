@@ -95,10 +95,9 @@ jobs:
               if not isinstance(package, dict):
                   raise SystemExit(f"Release Please package {package_path!r} must be an object")
               for option in ("include-v-in-tag", "include-v-in-release-name"):
-                  value = package.get(option, config.get(option))
-                  if value is not False:
+                  if package.get(option, config.get(option)) is False:
                       raise SystemExit(
-                          f"Release Please option {option!r} must be false for {package_path!r}"
+                          f"Release Please option {option!r} must be unset for {package_path!r}"
                       )
           PY
 
