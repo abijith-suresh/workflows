@@ -57,6 +57,78 @@ jobs:
             python3 -m json.tool "$file" > /dev/null
           done
 
+      - name: Check workflow conventions
+        # Full-SHA pins with exact tag comments, kebab-case inputs,
+        # UPPER_SNAKE_CASE secrets, and explicit permissions and timeouts.
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          import yaml
+
+          errors = []
+          workflows = sorted(Path(".github/workflows").glob("*.yml"))
+          templates = sorted(Path("templates/.github/workflows").glob("*.yml"))
+          actions = sorted(Path(".github/actions").glob("*/action.yml"))
+
+          pin = re.compile(r"^[\w.-]+/[\w./-]+@[0-9a-f]{40}$")
+          placeholder = re.compile(r"^abijith-suresh/workflows/[\w./-]+@FULL_COMMIT_SHA$")
+          exact_tag = re.compile(r"#\s*v\d+\.\d+\.\d+\s*$")
+          kebab = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
+          upper_snake = re.compile(r"^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$")
+
+          for path in workflows + templates + actions:
+              for number, line in enumerate(path.read_text().splitlines(), 1):
+                  match = re.match(r"^\s*(?:-\s+)?uses:\s*(\S+)(.*)$", line)
+                  if not match or line.lstrip().startswith("#"):
+                      continue
+                  ref, rest = match.groups()
+                  if ref.startswith("./") or ref.startswith("docker://"):
+                      continue
+                  if path in templates and placeholder.match(ref):
+                      if "# vX.Y.Z" not in rest:
+                          errors.append(f"{path}:{number}: placeholder pins carry '# vX.Y.Z'")
+                      continue
+                  if not pin.match(ref):
+                      errors.append(f"{path}:{number}: pin {ref} to a full commit SHA")
+                  elif not exact_tag.search(rest):
+                      errors.append(f"{path}:{number}: comment the exact release tag, such as '# v1.2.3'")
+
+          for path in workflows + templates:
+              doc = yaml.safe_load(path.read_text())
+              triggers = doc.get("on", doc.get(True)) or {}
+              if "permissions" not in doc:
+                  errors.append(f"{path}: set top-level permissions (usually {{}})")
+              call = triggers.get("workflow_call") if isinstance(triggers, dict) else None
+              if isinstance(call, dict):
+                  for name in (call.get("inputs") or {}):
+                      if not kebab.match(name):
+                          errors.append(f"{path}: input {name!r} must be kebab-case")
+                  for name in (call.get("secrets") or {}):
+                      if not upper_snake.match(name):
+                          errors.append(f"{path}: secret {name!r} must be UPPER_SNAKE_CASE")
+              for job_id, job in (doc.get("jobs") or {}).items():
+                  if "permissions" not in job:
+                      errors.append(f"{path}: job {job_id!r} must set permissions")
+                  if "runs-on" in job and "timeout-minutes" not in job:
+                      errors.append(f"{path}: job {job_id!r} must set timeout-minutes")
+
+          for path in actions:
+              doc = yaml.safe_load(path.read_text())
+              for name in (doc.get("inputs") or {}):
+                  if not kebab.match(name):
+                      errors.append(f"{path}: input {name!r} must be kebab-case")
+
+          for error in errors:
+              print(f"::error::{error}")
+          if errors:
+              raise SystemExit(1)
+          print(f"Checked {len(workflows)} workflows, {len(templates)} templates, {len(actions)} actions.")
+          PY
+
       - name: Check changed content for whitespace errors
         env:
           EVENT_NAME: ${{ github.event_name }}
