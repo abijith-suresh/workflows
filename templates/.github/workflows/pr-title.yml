@@ -1,0 +1,14 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  pr-title:
+    name: pr-title
+    permissions:
+      pull-requests: read
+    uses: abijith-suresh/workflows/.github/workflows/conventional-commit-title.yml@FULL_COMMIT_SHA # vX.Y.Z

@@ -1,0 +1,6 @@
+# The only tool version source: exact versions, no .node-version, .nvmrc, or
+# .bun-version. Keep package.json packageManager at the same Bun version.
+# npm projects pin node and npm instead of bun.
+[tools]
+bun = "1.4.4"
+node = "24.22.2"

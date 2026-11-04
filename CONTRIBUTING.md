@@ -2,8 +2,12 @@
 
 1. Read the affected workflow and its callers. Keep reusable jobs small and
    project-specific logic in consumers. Preserve public input, secret, and check
-   names unless the change includes a migration plan. Quality workflows keep a
-   root verification script; do not add arbitrary command or directory inputs.
+   names unless the change includes a migration plan. A called job's `name:` is
+   part of the check names callers require. Name inputs in kebab-case and
+   secrets in UPPER_SNAKE_CASE, matching the repository secret callers pass.
+   Quality workflows keep a root verification script; do not add arbitrary
+   command or directory inputs. Change [templates/](templates/) in the same PR
+   as the workflow or action they call.
 2. Put interfaces and executable rules in YAML. Use comments for caller setup
    or tradeoffs the code cannot explain. Markdown covers purpose and process,
    without parallel catalogs or copies of workflow rules. Called workflows
