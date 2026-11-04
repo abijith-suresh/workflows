@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    permissions:
+      contents: read
+    uses: abijith-suresh/workflows/.github/workflows/ci.yml@FULL_COMMIT_SHA # vX.Y.Z
+
+  dependency-review:
+    name: dependency-review
+    permissions:
+      contents: read
+    uses: abijith-suresh/workflows/.github/workflows/dependency-review.yml@FULL_COMMIT_SHA # vX.Y.Z
+
+  # Repository-local jobs go here; add each one to the gate's needs.
+
+  gate:
+    name: gate
+    if: ${{ !cancelled() }}
+    needs: [ci, dependency-review]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require every job to succeed
+        uses: abijith-suresh/workflows/.github/actions/gate@FULL_COMMIT_SHA # vX.Y.Z
+        with:
+          needs: ${{ toJSON(needs) }}

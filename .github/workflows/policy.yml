@@ -43,6 +43,20 @@ jobs:
           ACTIONLINT_BIN: ${{ runner.temp }}/actionlint/actionlint
         run: '"$ACTIONLINT_BIN"'
 
+      - name: Lint caller templates
+        env:
+          ACTIONLINT_BIN: ${{ runner.temp }}/actionlint/actionlint
+        shell: bash
+        run: '"$ACTIONLINT_BIN" templates/.github/workflows/*.yml'
+
+      - name: Validate template JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in templates/*.json templates/.*.json; do
+            python3 -m json.tool "$file" > /dev/null
+          done
+
       - name: Check changed content for whitespace errors
         env:
           EVENT_NAME: ${{ github.event_name }}

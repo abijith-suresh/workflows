@@ -1,0 +1,23 @@
+name: Clean up Vercel preview deployments
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions: {}
+
+concurrency:
+  group: vercel-preview-cleanup-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: cleanup
+    permissions:
+      pull-requests: read
+    uses: abijith-suresh/workflows/.github/workflows/vercel-preview-cleanup.yml@FULL_COMMIT_SHA # vX.Y.Z
+    with:
+      vercel-project: VERCEL_PROJECT_NAME
+      vercel-scope: VERCEL_TEAM_SLUG
+    secrets:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

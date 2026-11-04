@@ -1,6 +1,6 @@
 # workflows — agent brief
 
-Reusable GitHub Actions workflows for the owner's repositories. Callers pin a revision for shared CI, release, and repository maintenance while keeping their own triggers, application-specific checks, deployment, and publishing.
+Reusable GitHub Actions workflows and default repository configuration for the owner's repositories. Callers pin a revision for shared CI, release, and repository maintenance while keeping their own triggers, application-specific checks, deployment, and publishing.
 
 ## The Project
 Core promise: one shared implementation of standard repository setup, adopted by full-SHA pin, so callers get identical behavior and can audit exactly what runs.
@@ -16,6 +16,7 @@ Status: live (maintenance).
 | Commands & deps | no package.json — `actionlint`; `policy.yml` owns exact commands and versions |
 | How to work here | CONTRIBUTING.md |
 | Adoption | README.md § Adopting a workflow |
+| Caller files & default configs | `templates/` |
 | Version & release metadata | `VERSION`, `release-please-config.json`, `.release-please-manifest.json` |
 
 Code and tests are the authority; this file never overrides executable truth.

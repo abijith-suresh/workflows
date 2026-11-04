@@ -1,112 +1,95 @@
 # workflows
 
-Reusable GitHub Actions workflows for [Abijith Suresh](https://github.com/abijith-suresh)'s
-repositories. Callers keep their triggers and application-specific checks,
-deployment, and publishing logic.
+Reusable GitHub Actions workflows and default repository configuration for
+[Abijith Suresh](https://github.com/abijith-suresh)'s repositories. Callers keep
+their triggers and application-specific checks, deployment, and publishing
+logic.
 
 ## Adopting a workflow
 
 1. Inspect the caller's existing CI and choose a shared job from
    [.github/workflows/](.github/workflows/). Only files exposing `workflow_call`
    are reusable.
-2. Choose a release or reviewed revision, resolve it to a full commit SHA, and
-   read the workflow at that SHA. Its declarations, commands, and caller
-   comments define what to configure; the current branch may differ.
-3. Prepare the required files and service settings. Call the workflow from a
-   job's `uses:` field with the full SHA and a version comment. Set needed inputs
-   under `with:` and keep event and branch filters in the caller. For other
-   project layouts, add a root wrapper or keep the job local.
+2. Choose a release, resolve its tag to a full commit SHA, and read the workflow
+   at that SHA. Its declarations, commands, and caller comments define what to
+   configure; the current branch may differ.
+3. Start from the matching caller file in [templates/](templates/). Replace each
+   `FULL_COMMIT_SHA # vX.Y.Z` with the chosen SHA and its exact tag. Pin every
+   reference to this repository at the same release. Keep event and branch
+   filters in the caller. For other project layouts, add a root wrapper or keep
+   the job local.
 4. Grant the called jobs' required permissions and pass only declared secrets
    by name. Scope named tokens separately; job permissions govern `GITHUB_TOKEN`.
    Keep ordinary PR CI read-only and free of secrets.
 5. Run the caller's checks and lint its workflows. Exercise the intended Actions
    event and confirm check names before updating branch protection. On upgrades,
    review the workflow diff and release notes, then repeat validation.
+   Dependabot's `github-actions` ecosystem proposes pin updates; auto-merge
+   skips that ecosystem, so each one gets a human review.
+
+## Standard caller set
+
+Projects in the standard setup copy these caller files from
+[templates/.github/workflows/](templates/.github/workflows/), with the same file
+and job names:
+
+| Caller file | Jobs | Extra setup |
+|---|---|---|
+| `ci.yml` | `ci`, `dependency-review`, `gate` | root `mise.toml`, `bun.lock`, package scripts; dependency review needs a public repository or the licensing for it |
+| `pr-title.yml` | `pr-title` | none |
+| `dependabot-auto-merge.yml` | `dependabot` | Dependabot config and auto-merge enabled in repository settings |
+| `release-please.yml` | `release-please` | root release-please config and manifest, `RELEASE_PLEASE_TOKEN` secret |
+| `vercel-preview-cleanup.yml` | `cleanup` | Vercel project link, `VERCEL_TOKEN` secret |
+
+Require exactly two checks in branch protection: `gate` and
+`pr-title / Validate title`. `gate` runs the
+[gate action](.github/actions/gate/action.yml), which fails unless every job
+in its `needs` succeeded. Repository-local jobs (a qpdf smoke, for example) go
+in `ci.yml` and in the gate's `needs`. Keep no inline copies of the shared jobs.
+The shared workflow is the only implementation.
 
 ## Continuous integration
 
 [ci.yml](.github/workflows/ci.yml) is the shared CI for Astro projects: Bun
 from the root `mise.toml`, a frozen install, then type check, lint, format
 check, tests, build, and the Playwright browser suite as separate steps. There
-are no inputs and nothing to configure per project. Every step runs; a missing
-or failing script fails the job.
+are no inputs. Every step runs; a missing or failing script fails the job.
 
-Callers need a root `mise.toml` with a `bun` pin, a `bun.lock` with Playwright,
-and `type-check`, `lint`, `format:check`, `test`, `build`, and `test:e2e`
-scripts in the root `package.json`. The Build step runs before the browser
-suite, and `test:e2e` consumes that build: it runs Playwright, which owns its
-preview server through the config, without building again. For a clean local
-run, callers can add a `test:e2e:build` script that runs `bun run build &&
-bun run test:e2e`; CI does not call it. Chromium, Firefox, and WebKit install
-with their system dependencies; when the browser run fails, `test-results/`
-and `playwright-report/` upload as the `browser-test-results` artifact.
+The Build step runs before the browser suite, and `test:e2e` consumes that
+build: it runs Playwright, which owns its preview server through the config,
+without building again. For a clean local run, callers can add a
+`test:e2e:build` script that runs `bun run build && bun run test:e2e`; CI does
+not call it. When the browser run fails, `test-results/` and
+`playwright-report/` upload as the `browser-test-results` artifact.
 
-```yaml
-name: CI
+Bun projects without a browser suite use
+[bun-quality.yml](.github/workflows/bun-quality.yml), and npm projects use
+[npm-quality.yml](.github/workflows/npm-quality.yml). Both run the root
+`verify` script.
 
-on:
-  pull_request:
-    branches: [main]
+## Shared defaults
 
-concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+[templates/](templates/) mirrors where each file goes in a consumer:
 
-permissions: {}
+| File | Default |
+|---|---|
+| `mise.toml` | the only tool version source, exact versions |
+| `.github/dependabot.yml` | weekly grouped minor and patch updates for the package manager and for GitHub Actions |
+| `release-please-config.json`, `.release-please-manifest.json` | single `node` package; before 1.0, features bump the patch and breaking changes the minor; default `v` tags |
+| `commitlint.config.ts` | the same types, length, and full-stop rules as the PR title check |
+| `biome.json` | formatter, recommended lint preset, Markdown and Astro overrides |
 
-jobs:
-  ci:
-    name: CI
-    permissions:
-      contents: read
-    uses: abijith-suresh/workflows/.github/workflows/ci.yml@FULL_COMMIT_SHA # reviewed revision
+Copy a default, then change it only where the project needs to. Keep
+project-specific Biome rule overrides beside the shared base.
 
-  gate:
-    name: gate
-    if: ${{ !cancelled() }}
-    needs: [ci]
-    runs-on: ubuntu-24.04
-    permissions: {}
-    steps:
-      - name: Require CI success
-        shell: bash
-        env:
-          CI_RESULT: ${{ needs.ci.result }}
-        run: |
-          set -euo pipefail
-          if [[ "$CI_RESULT" != success ]]; then
-            echo "CI result: $CI_RESULT" >&2
-            exit 1
-          fi
-```
+## Releases and tags
 
-Require only the caller's `gate` job in branch protection. It fails when the
-pipeline fails and can also cover repository-local jobs; add those jobs to its
-`needs` list. Checks inside the call are named
-`<caller job name> / <called job name>`; confirm them on a real run before
-changing required checks.
-
-### Standard caller set
-
-Projects in the standard setup use the same caller files and job names, all
-pinned to the same revision:
-
-| Caller file | Jobs | Extra setup |
-|---|---|---|
-| `ci.yml` | `ci`, `dependency-review`, `gate` | root `mise.toml`, `bun.lock`, package scripts; dependency review needs a public repository or the licensing for it |
-| `pr-title.yml` | `pr-title` | none |
-| `dependabot-auto-merge.yml` | `dependabot` | Dependabot config and auto-merge enabled; call from `pull_request_target` with `contents: write` and `pull-requests: write` |
-| `release-please.yml` | `release-please` | root release-please config and manifest, `RELEASE_PLEASE_TOKEN` secret |
-| `vercel-preview-cleanup.yml` | `cleanup` | Vercel project link; call from `pull_request_target` with `types: [closed]` |
-
-`gate` is a caller-side job that needs the other jobs in `ci.yml` plus any
-repository-local jobs; require only `gate` in branch protection. Repository-local
-jobs (a qpdf smoke, for example) stay in `ci.yml` so the gate can cover them.
-Keep no inline copies of the shared jobs; the shared workflow is the only
-implementation.
-
-`ci.yml` replaces `bun-quality.yml` for Astro projects. `npm-quality.yml`
-continues for npm projects.
+Single-package repositories release with release-please and tag `vX.Y.Z`, the
+release-please default. The shared [release-please.yml](.github/workflows/release-please.yml)
+rejects configurations that turn the prefix off. Workspaces that publish
+several packages with Changesets keep its `<package>@<version>` tags. This
+repository follows the same standard; releases 0.5.0 through 0.8.1 carry both
+the unprefixed tag they were cut with and a matching `v` tag.
 
 ## Contributing
 
