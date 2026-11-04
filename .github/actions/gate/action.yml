@@ -1,0 +1,43 @@
+name: Gate
+description: Fail unless every job in the calling job's needs succeeded.
+
+# Use as the only step of the caller's gate job, the single required check:
+#
+#   gate:
+#     name: gate
+#     if: ${{ !cancelled() }}
+#     needs: [ci, dependency-review]
+#     runs-on: ubuntu-24.04
+#     timeout-minutes: 5
+#     permissions: {}
+#     steps:
+#       - uses: abijith-suresh/workflows/.github/actions/gate@FULL_COMMIT_SHA # vX.Y.Z
+#         with:
+#           needs: ${{ toJSON(needs) }}
+#
+# The step runs inside the caller's job, so the check keeps the caller's job
+# name. Skipped and cancelled jobs count as failures.
+inputs:
+  needs:
+    description: The calling job's needs context, passed as toJSON(needs)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Require success from every needed job
+      shell: bash
+      env:
+        NEEDS_JSON: ${{ inputs.needs }}
+      run: |
+        set -euo pipefail
+        if ! jq -e 'type == "object" and length > 0' <<< "$NEEDS_JSON" > /dev/null 2>&1; then
+          echo '::error::Pass the needs context as JSON (toJSON of needs) from a job that needs at least one job.'
+          exit 1
+        fi
+        jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS_JSON"
+        failed="$(jq -r '[to_entries[] | select(.value.result != "success") | .key] | join(", ")' <<< "$NEEDS_JSON")"
+        if [[ -n "$failed" ]]; then
+          echo "::error::Required jobs did not succeed: $failed"
+          exit 1
+        fi
