@@ -8,16 +8,16 @@ name: Clean up Vercel preview deployments
 on:
   workflow_call:
     inputs:
-      vercel_project:
+      vercel-project:
         description: Vercel project containing the previews
         required: true
         type: string
-      vercel_scope:
+      vercel-scope:
         description: Vercel team slug that owns the project
         required: true
         type: string
     secrets:
-      vercel_token:
+      VERCEL_TOKEN:
         description: Vercel token scoped to the team that owns the project
         required: true
 
@@ -43,9 +43,9 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
           PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || '' }}
-          VERCEL_PROJECT: ${{ inputs.vercel_project }}
-          VERCEL_SCOPE: ${{ inputs.vercel_scope }}
-          VERCEL_TOKEN: ${{ secrets.vercel_token }}
+          VERCEL_PROJECT: ${{ inputs.vercel-project }}
+          VERCEL_SCOPE: ${{ inputs.vercel-scope }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -59,7 +59,7 @@ jobs:
             exit 1
           fi
           if [[ -z "${VERCEL_PROJECT:-}" || -z "${VERCEL_SCOPE:-}" ]]; then
-            echo "::error::Both vercel_project and vercel_scope inputs are required."
+            echo "::error::Both vercel-project and vercel-scope inputs are required."
             exit 1
           fi
 
